@@ -15,6 +15,7 @@ export async function recordPurchaseAction(payload: {
   payment_method: 'cash' | 'mpesa';
   note?: string;
   purchase_date: string;
+  menu_item_id?: number;
 }) {
   await requireRole(['owner']);
   const supabase = await createServerSupabaseClient();
