@@ -9,6 +9,8 @@ const ROLE_NAV: Record<AppRole, NavItem[]> = {
     { href: '/owner', label: 'Overview' },
     { href: '/owner/sales', label: 'Sales' },
     { href: '/owner/debts', label: 'Debts' },
+    { href: '/owner/purchases', label: 'Purchases' },
+    { href: '/owner/expenses', label: 'Expenses' },
     { href: '/owner/users', label: 'Users' },
   ],
   waiter: [
@@ -17,7 +19,12 @@ const ROLE_NAV: Record<AppRole, NavItem[]> = {
     { href: '/waiter/debts', label: 'Debts' },
     { href: '/waiter/history', label: 'History' },
   ],
-  chef: [{ href: '/chef', label: 'Overview' }],
+  chef: [
+    { href: '/chef', label: 'Overview' },
+    { href: '/chef/opening-stock', label: 'Opening stock' },
+    { href: '/chef/production', label: 'Production' },
+    { href: '/chef/expenses', label: 'Expenses' },
+  ],
   manager: [{ href: '/owner', label: 'Overview' }],
   cashier: [{ href: '/waiter', label: 'Overview' }],
   accountant: [{ href: '/owner', label: 'Overview' }],
