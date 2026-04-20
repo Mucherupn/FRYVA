@@ -2,6 +2,7 @@ import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { requireRole } from '@/lib/auth/guards';
 import { resolveReportRange, REPORT_PERIOD_OPTIONS } from '@/lib/reports/period';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { classifyDebtAging } from '@/lib/debts/aging';
 
 type Search = {
   waiter?: string;
@@ -10,6 +11,7 @@ type Search = {
   date_from?: string;
   date_to?: string;
   debt_id?: string;
+  page?: string;
 };
 
 function money(value: number) {
@@ -29,18 +31,24 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
     : { data: [] as Array<{ id: string; full_name: string }> };
   const waiterNameMap = new Map((waiterProfiles ?? []).map((profile) => [profile.id, profile.full_name]));
 
+  const page = Math.max(1, Number(params.page ?? '1') || 1);
+  const pageSize = 30;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
   let debtsQuery = supabase
     .from('debts')
-    .select('id, created_at, status, original_amount, remaining_amount, assigned_waiter_id, debtor_id, debtors(full_name, phone, notes)')
+    .select('id, created_at, status, original_amount, remaining_amount, assigned_waiter_id, debtor_id, debtors(full_name, phone, notes)', { count: 'exact' })
     .order('created_at', { ascending: false })
-    .limit(150);
+    .range(from, to);
 
   if (params.waiter) debtsQuery = debtsQuery.eq('assigned_waiter_id', params.waiter);
   if (params.status) debtsQuery = debtsQuery.eq('status', params.status);
   debtsQuery = debtsQuery.gte('created_at', `${range.from}T00:00:00`).lte('created_at', `${range.to}T23:59:59`);
 
-  const { data: debts } = await debtsQuery;
+  const { data: debts, count } = await debtsQuery;
   const filteredDebts = (debts ?? []) as any[];
+  const totalPages = Math.max(1, Math.ceil((count ?? 0) / pageSize));
   const debtIds = filteredDebts.map((d) => d.id);
 
   const { data: payments } = debtIds.length
@@ -69,12 +77,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   const byWaiter = new Map<string, number>();
   for (const debt of filteredDebts) {
     if (debt.status === 'paid') continue;
-    const created = new Date(debt.created_at);
-    const ageDays = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
     const amount = Number(debt.remaining_amount);
-    if (ageDays <= 0) aging.today += amount;
-    else if (ageDays <= 7) aging.d1_7 += amount;
-    else if (ageDays <= 30) aging.d8_30 += amount;
+    const bucket = classifyDebtAging(debt.created_at, now);
+    if (bucket === 'today') aging.today += amount;
+    else if (bucket === 'd1_7') aging.d1_7 += amount;
+    else if (bucket === 'd8_30') aging.d8_30 += amount;
     else aging.over30 += amount;
     byWaiter.set(debt.assigned_waiter_id, (byWaiter.get(debt.assigned_waiter_id) ?? 0) + amount);
   }
@@ -130,6 +137,15 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
           ))}
         </div>
       </section>
+
+
+      <div className="mb-3 flex items-center justify-between text-xs text-slate-600">
+        <p>Page {page} of {totalPages} · {(count ?? 0)} debts</p>
+        <div className="space-x-2">
+          {page > 1 ? <a className="underline" href={`?period=${range.key}&date_from=${range.from}&date_to=${range.to}${params.waiter ? `&waiter=${params.waiter}` : ''}${params.status ? `&status=${params.status}` : ''}&page=${page - 1}`}>Previous</a> : null}
+          {page < totalPages ? <a className="underline" href={`?period=${range.key}&date_from=${range.from}&date_to=${range.to}${params.waiter ? `&waiter=${params.waiter}` : ''}${params.status ? `&status=${params.status}` : ''}&page=${page + 1}`}>Next</a> : null}
+        </div>
+      </div>
 
       <div className="space-y-2">
         {filteredDebts.length === 0 ? <p className="rounded border border-dashed p-4 text-sm text-slate-500">No debts found.</p> : filteredDebts.map((debt: any) => (

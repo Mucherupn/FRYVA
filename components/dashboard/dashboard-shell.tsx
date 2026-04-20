@@ -15,6 +15,7 @@ const ROLE_NAV: Record<AppRole, NavItem[]> = {
     { href: '/owner/reports/daily', label: 'Daily report' },
     { href: '/owner/inventory', label: 'Inventory' },
     { href: '/owner/users', label: 'Users' },
+    { href: '/owner/operations', label: 'Operations' },
   ],
   waiter: [
     { href: '/waiter', label: 'Overview' },

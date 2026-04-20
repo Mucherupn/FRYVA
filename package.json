@@ -1,0 +1,7 @@
+{
+  "name": "fryva-phase5",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/phase5.test.mjs"
+  }
+}

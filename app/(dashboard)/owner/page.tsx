@@ -82,7 +82,7 @@ export default async function OwnerDashboardPage() {
         <div className="rounded border p-3 md:col-span-3"><p className="text-xs text-slate-500">Today net operational position</p><p className="text-xl font-semibold">{money(todayNet)}</p></div>
         <div className="rounded border p-3"><p className="text-xs text-slate-500">Opening stock summary (qty)</p><p className="text-lg font-semibold">{openingTotal}</p></div>
         <div className="rounded border p-3"><p className="text-xs text-slate-500">Production summary (qty)</p><p className="text-lg font-semibold">{productionTotal}</p></div>
-        <div className="rounded border p-3"><p className="text-xs text-slate-500">Controls</p><p className="text-sm"><Link className="underline" href="/owner/purchases">Purchases</Link> · <Link className="underline" href="/owner/expenses">Expenses</Link></p></div>
+        <div className="rounded border p-3"><p className="text-xs text-slate-500">Controls</p><p className="text-sm"><Link className="underline" href="/owner/purchases">Purchases</Link> · <Link className="underline" href="/owner/expenses">Expenses</Link> · <Link className="underline" href="/owner/operations">Operations</Link></p></div>
       </div>
 
       <section className="mt-6 space-y-2">

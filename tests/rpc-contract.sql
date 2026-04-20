@@ -1,0 +1,6 @@
+-- Phase 5 RPC contract checks (run in CI against a seeded Supabase test DB)
+-- SELECT public.finalize_sale('{"payment_method":"cash","items":[{"menu_item_id":1,"quantity":1}]}'::jsonb);
+-- SELECT public.record_debt_payment('{"debt_id":"<uuid>","amount":100,"payment_method":"cash"}'::jsonb);
+-- SELECT public.record_purchase('{"item_name":"Oil","qty":1,"unit":"ltr","unit_cost":100,"total_cost":100,"payment_method":"cash"}'::jsonb);
+-- SELECT public.record_expense('{"description":"Fuel","amount":100,"payment_method":"cash"}'::jsonb);
+-- SELECT public.correct_or_void_sale('{"sale_id":"<uuid>","operation":"void","reason":"test"}'::jsonb);
