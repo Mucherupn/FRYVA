@@ -1,12 +1,33 @@
 import { redirect } from 'next/navigation';
 import type { AppRole } from './roles';
-import { DASHBOARD_HOME } from './roles';
+import { APP_ROLES, DASHBOARD_HOME } from './roles';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export type AuthContext = {
   userId: string;
   activeRole: AppRole;
 };
+
+function isAppRole(value: string): value is AppRole {
+  return APP_ROLES.includes(value as AppRole);
+}
+
+async function resolveCurrentUserRole(userId: string): Promise<AppRole | null> {
+  const supabase = await createServerSupabaseClient();
+  const { data: assignments, error } = await supabase
+    .from('user_role_assignments')
+    .select('role')
+    .eq('user_id', userId)
+    .order('assigned_at', { ascending: false })
+    .limit(1);
+
+  if (error || !assignments?.length) {
+    return null;
+  }
+
+  const candidate = assignments[0].role;
+  return isAppRole(candidate) ? candidate : null;
+}
 
 export async function requireAuth(): Promise<AuthContext> {
   const supabase = await createServerSupabaseClient();
@@ -18,19 +39,15 @@ export async function requireAuth(): Promise<AuthContext> {
     redirect('/login');
   }
 
-  const { data: assignments, error } = await supabase
-    .from('user_role_assignments')
-    .select('role')
-    .eq('user_id', user.id)
-    .limit(1);
+  const role = await resolveCurrentUserRole(user.id);
 
-  if (error || !assignments || assignments.length === 0) {
+  if (!role) {
     redirect('/login?error=no_role');
   }
 
   return {
     userId: user.id,
-    activeRole: assignments[0].role,
+    activeRole: role,
   };
 }
 

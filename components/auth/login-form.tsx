@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
+import { APP_ROLES, DASHBOARD_HOME, type AppRole } from '@/lib/auth/roles';
 
 export function LoginForm() {
   const supabase = createBrowserSupabaseClient();
@@ -42,19 +43,24 @@ export function LoginForm() {
       .from('user_role_assignments')
       .select('role')
       .eq('user_id', user.id)
+      .order('assigned_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    if (assignmentError || !assignment) {
+    if (assignmentError || !assignment?.role) {
       setLoading(false);
       setError('No assigned role found. Contact an owner.');
       return;
     }
 
-    const role = assignment.role;
-    const destination = role === 'owner' ? '/owner' : role === 'chef' ? '/chef' : '/waiter';
+    const role = assignment.role as AppRole;
+    if (!APP_ROLES.includes(role)) {
+      setLoading(false);
+      setError('Invalid role assignment found. Contact an owner.');
+      return;
+    }
 
-    router.replace(destination);
+    router.replace(DASHBOARD_HOME[role]);
     router.refresh();
   };
 

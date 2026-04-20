@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
-import { ROUTE_ROLE_REQUIREMENTS, type AppRole, DASHBOARD_HOME } from '@/lib/auth/roles';
+import { ROUTE_ROLE_REQUIREMENTS, type AppRole, APP_ROLES, DASHBOARD_HOME } from '@/lib/auth/roles';
 import { createServerClient } from '@supabase/ssr';
 
 const AUTH_PREFIXES = ['/owner', '/waiter', '/chef'];
@@ -36,15 +36,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  const { data: assignment } = await supabase
+  const { data: assignment, error: assignmentError } = await supabase
     .from('user_role_assignments')
     .select('role')
     .eq('user_id', user.id)
+    .order('assigned_at', { ascending: false })
     .limit(1)
     .maybeSingle();
 
   const role = assignment?.role as AppRole | undefined;
-  if (!role) {
+  if (assignmentError || !role || !APP_ROLES.includes(role)) {
     return NextResponse.redirect(new URL('/login?error=no_role', request.url));
   }
 
