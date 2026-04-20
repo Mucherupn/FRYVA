@@ -7,9 +7,16 @@ type NavItem = { href: string; label: string };
 const ROLE_NAV: Record<AppRole, NavItem[]> = {
   owner: [
     { href: '/owner', label: 'Overview' },
+    { href: '/owner/sales', label: 'Sales' },
+    { href: '/owner/debts', label: 'Debts' },
     { href: '/owner/users', label: 'Users' },
   ],
-  waiter: [{ href: '/waiter', label: 'Overview' }],
+  waiter: [
+    { href: '/waiter', label: 'Overview' },
+    { href: '/waiter/pos', label: 'POS' },
+    { href: '/waiter/debts', label: 'Debts' },
+    { href: '/waiter/history', label: 'History' },
+  ],
   chef: [{ href: '/chef', label: 'Overview' }],
   manager: [{ href: '/owner', label: 'Overview' }],
   cashier: [{ href: '/waiter', label: 'Overview' }],
@@ -41,7 +48,7 @@ export function DashboardShell({
           </form>
         </div>
       </header>
-      <div className="mx-auto grid w-full max-w-7xl gap-6 p-6 md:grid-cols-[220px_1fr]">
+      <div className="mx-auto grid w-full max-w-7xl gap-6 p-4 md:grid-cols-[220px_1fr] md:p-6">
         <aside className="rounded-lg border bg-white p-4">
           <p className="mb-3 text-xs font-semibold uppercase text-slate-500">{role} panel</p>
           <nav className="space-y-2">
@@ -52,7 +59,7 @@ export function DashboardShell({
             ))}
           </nav>
         </aside>
-        <main className="rounded-lg border bg-white p-6">{children}</main>
+        <main className="rounded-lg border bg-white p-4 md:p-6">{children}</main>
       </div>
     </div>
   );
