@@ -3,8 +3,10 @@
 import { useMemo, useState, useTransition } from 'react';
 import { recordPurchaseAction } from '@/app/(dashboard)/owner/purchases/actions';
 
-export function PurchasesWorkflow({ defaultDate }: { defaultDate: string }) {
-  const [form, setForm] = useState({ item_name: '', category: '', qty: '', unit: '', unit_cost: '', total_cost: '', supplier: '', payment_method: 'cash' as 'cash' | 'mpesa', note: '', purchase_date: defaultDate });
+type MenuOption = { id: number; name: string; category?: string | null };
+
+export function PurchasesWorkflow({ defaultDate, menuItems }: { defaultDate: string; menuItems: MenuOption[] }) {
+  const [form, setForm] = useState({ item_name: '', category: '', qty: '', unit: '', unit_cost: '', total_cost: '', supplier: '', payment_method: 'cash' as 'cash' | 'mpesa', note: '', purchase_date: defaultDate, menu_item_id: '' });
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -23,7 +25,16 @@ export function PurchasesWorkflow({ defaultDate }: { defaultDate: string }) {
     }
 
     startTransition(async () => {
-      const result = await recordPurchaseAction({ ...form, qty, unit_cost, total_cost, category: form.category || undefined, supplier: form.supplier || undefined, note: form.note || undefined });
+      const result = await recordPurchaseAction({
+        ...form,
+        qty,
+        unit_cost,
+        total_cost,
+        category: form.category || undefined,
+        supplier: form.supplier || undefined,
+        note: form.note || undefined,
+        menu_item_id: form.menu_item_id ? Number(form.menu_item_id) : undefined,
+      });
       if (!result.ok) return setError(result.error);
       setSuccess('Purchase saved and posted to ledger.');
       setForm((prev) => ({ ...prev, item_name: '', qty: '', unit_cost: '', total_cost: '', note: '' }));
@@ -33,6 +44,25 @@ export function PurchasesWorkflow({ defaultDate }: { defaultDate: string }) {
   return (
     <section className="space-y-3 rounded border p-4">
       <div className="grid gap-3 md:grid-cols-3">
+        <select
+          value={form.menu_item_id}
+          onChange={(e) => {
+            const value = e.target.value;
+            const matched = menuItems.find((item) => String(item.id) === value);
+            setForm({
+              ...form,
+              menu_item_id: value,
+              item_name: matched ? matched.name : form.item_name,
+              category: matched?.category ?? form.category,
+            });
+          }}
+          className="rounded border px-3 py-2 text-sm"
+        >
+          <option value="">Link to menu item (recommended)</option>
+          {menuItems.map((item) => (
+            <option key={item.id} value={item.id}>{item.name}{item.category ? ` (${item.category})` : ''}</option>
+          ))}
+        </select>
         <input value={form.item_name} onChange={(e) => setForm({ ...form, item_name: e.target.value })} placeholder="Item name" className="rounded border px-3 py-2 text-sm" />
         <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Category" className="rounded border px-3 py-2 text-sm" />
         <input value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} placeholder="Supplier (optional)" className="rounded border px-3 py-2 text-sm" />
