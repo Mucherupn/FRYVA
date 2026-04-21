@@ -4,21 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { requireRole } from '@/lib/auth/guards';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { APP_ROLES, type AppRole } from '@/lib/auth/roles';
-
-export type CreateStaffFormState = {
-  status: 'idle' | 'success' | 'error';
-  message?: string;
-  createdUser?: {
-    fullName: string;
-    email: string;
-    role: AppRole;
-  };
-  fieldErrors?: Partial<Record<'full_name' | 'email' | 'password' | 'confirm_password' | 'role', string>>;
-};
-
-export const INITIAL_CREATE_STAFF_FORM_STATE: CreateStaffFormState = {
-  status: 'idle',
-};
+import type { CreateStaffFormState } from './state';
 
 function isAppRole(role: string): role is AppRole {
   return APP_ROLES.includes(role as AppRole);
