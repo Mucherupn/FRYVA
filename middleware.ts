@@ -6,7 +6,7 @@ import { createServerClient } from '@supabase/ssr';
 const AUTH_PREFIXES = ['/owner', '/waiter', '/chef'];
 
 export async function middleware(request: NextRequest) {
-  const response = updateSession(request);
+  const response = await updateSession(request);
   const pathname = request.nextUrl.pathname;
 
   if (!AUTH_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
