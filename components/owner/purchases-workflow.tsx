@@ -23,7 +23,7 @@ export function PurchasesWorkflow({ defaultDate, menuItems }: { defaultDate: str
 
     startTransition(async () => {
       const result = await recordPurchaseAction({ ...form, qty, unit_cost, total_cost, category: form.category || undefined, supplier: form.supplier || undefined, note: form.note || undefined, menu_item_id: form.menu_item_id ? Number(form.menu_item_id) : undefined });
-      if (!result.ok) return setError(result.error);
+      if (!result.ok) return setError(result.error ?? 'Request failed.');
       setSuccess('Purchase saved and posted to ledger.');
       setForm((prev) => ({ ...prev, item_name: '', qty: '', unit_cost: '', total_cost: '', note: '' }));
     });

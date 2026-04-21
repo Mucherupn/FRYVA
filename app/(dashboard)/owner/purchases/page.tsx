@@ -27,7 +27,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   const [{ data: purchases, count }, { data: categories }, { data: menuItems }] = await Promise.all([
     query,
     supabase.from('purchases').select('category').not('category', 'is', null),
-    supabase.from('menu_items').select('id, name, menu_categories(name)').eq('active', true).order('name', { ascending: true }),
+    supabase.from('menu_items').select('id, name, menu_categories(name)').eq('active', true).order('sort_order', { ascending: true }).order('name', { ascending: true }),
   ]);
 
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / pageSize));

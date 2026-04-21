@@ -52,7 +52,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
     const { data } = await supabase.from('sales').select('id, sale_number, sold_by, sold_at, subtotal, total, payment_method, note, status').eq('id', params.sale_id).maybeSingle();
     selectedSale = data;
 
-    const { data: items } = await supabase.from('sale_items').select('id, quantity, unit_price, line_total, menu_items(name)').eq('sale_id', params.sale_id).order('id', { ascending: true });
+    const { data: items } = await supabase.from('sale_items').select('id, quantity, unit_price, line_total, menu_item_name').eq('sale_id', params.sale_id).order('id', { ascending: true });
     saleItems = items ?? [];
   }
 
@@ -99,7 +99,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
           </div>
           <p className="text-sm text-slate-600">{new Date(selectedSale.sold_at).toLocaleString()} · {selectedSale.payment_method} · {selectedSale.status} · Waiter: {waiterNameMap.get(selectedSale.sold_by) ?? 'Unknown'}</p>
           {selectedSale.note ? <p className="text-sm">Note: {selectedSale.note}</p> : null}
-          <div className="space-y-1 text-sm">{saleItems.map((item: any) => <p key={item.id} className="flex justify-between rounded border px-2 py-1"><span>{item.menu_items?.name ?? 'Item'} × {item.quantity}</span><span>{money(Number(item.line_total))}</span></p>)}</div>
+          <div className="space-y-1 text-sm">{saleItems.map((item: any) => <p key={item.id} className="flex justify-between rounded border px-2 py-1"><span>{item.menu_item_name ?? 'Item'} × {item.quantity}</span><span>{money(Number(item.line_total))}</span></p>)}</div>
           <p className="text-sm font-semibold">Total: {money(Number(selectedSale.total))}</p>
         </section>
       ) : null}

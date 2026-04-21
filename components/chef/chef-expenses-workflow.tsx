@@ -15,7 +15,7 @@ export function ChefExpensesWorkflow({ defaultDate }: { defaultDate: string }) {
     if (!form.description.trim() || !amount || amount <= 0) return setError('Description and amount > 0 are required.');
     startTransition(async () => {
       const result = await recordChefExpenseAction({ ...form, amount, category: form.category || undefined, note: form.note || undefined });
-      if (!result.ok) return setError(result.error);
+      if (!result.ok) return setError(result.error ?? 'Failed to save kitchen expense.');
       setSuccess('Kitchen expense saved and posted to ledger.');
       setForm((prev) => ({ ...prev, description: '', amount: '', note: '' }));
     });

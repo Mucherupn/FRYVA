@@ -11,6 +11,8 @@ export default async function Page() {
     .from('menu_items')
     .select('id, name, selling_price, menu_categories(name)')
     .eq('active', true)
+    .eq('available', true)
+    .order('sort_order', { ascending: true })
     .order('name', { ascending: true });
 
   const mappedItems = (menuItems ?? []).map((item: any) => ({

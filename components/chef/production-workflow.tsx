@@ -21,7 +21,7 @@ export function ProductionWorkflow({ items, defaultDate }: { items: Item[]; defa
 
     startTransition(async () => {
       const result = await recordProductionAction({ entry_date: entryDate, menu_item_id: menuItemId, qty: qtyValue, note: note || undefined });
-      if (!result.ok) return setError(result.error);
+      if (!result.ok) return setError(result.error ?? 'Request failed.');
       setSuccess('Production entry saved.');
       setQty(''); setNote('');
     });

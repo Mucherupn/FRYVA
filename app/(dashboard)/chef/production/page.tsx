@@ -13,6 +13,7 @@ export default async function Page() {
     .select('id, name')
     .eq('active', true)
     .or('kitchen_item.eq.true,stock_tracked.eq.true')
+    .order('sort_order', { ascending: true })
     .order('name', { ascending: true });
 
   const { data: entries } = await supabase

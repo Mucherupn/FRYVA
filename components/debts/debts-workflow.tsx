@@ -42,7 +42,7 @@ export function DebtsWorkflow({ debts, ownerMode }: { debts: DebtRow[]; ownerMod
 
     startTransition(async () => {
       const result = await recordDebtPaymentAction({ debt_id: selectedDebt.id, amount: value, payment_method: paymentMethod, note: note || undefined });
-      if (!result.ok) return setError(result.error);
+      if (!result.ok) return setError(result.error ?? 'Request failed.');
       setSuccess('Payment recorded successfully.');
       setAmount('');
       setNote('');

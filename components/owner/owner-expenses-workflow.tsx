@@ -15,7 +15,7 @@ export function OwnerExpensesWorkflow({ defaultDate }: { defaultDate: string }) 
     setError(null); setSuccess(null);
     startTransition(async () => {
       const result = await recordOwnerExpenseAction({ ...form, amount, category: form.category || undefined, note: form.note || undefined });
-      if (!result.ok) return setError(result.error);
+      if (!result.ok) return setError(result.error ?? 'Request failed.');
       setSuccess('Expense saved and posted to ledger.');
       setForm((prev) => ({ ...prev, description: '', amount: '', note: '' }));
     });
