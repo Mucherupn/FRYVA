@@ -2,7 +2,8 @@
 
 import { useActionState, useMemo, useState } from 'react';
 import { APP_ROLES } from '@/lib/auth/roles';
-import { createUserAction, INITIAL_CREATE_STAFF_FORM_STATE } from './actions';
+import { createUserAction } from './actions';
+import { INITIAL_CREATE_STAFF_FORM_STATE } from './state';
 
 const FIELD_NAMES = ['full_name', 'email', 'password', 'confirm_password', 'role'] as const;
 type FieldName = (typeof FIELD_NAMES)[number];
