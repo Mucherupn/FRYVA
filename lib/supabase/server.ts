@@ -13,9 +13,14 @@ export async function createServerSupabaseClient() {
           return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
-          });
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch {
+            // `cookies().set` is not allowed during Server Component rendering.
+            // Middleware is responsible for refreshing and persisting auth cookies.
+          }
         },
       },
     },
