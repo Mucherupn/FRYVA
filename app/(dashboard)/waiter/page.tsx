@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
+import { MetricCard } from '@/components/ui/fryva-ui';
 import { requireRole } from '@/lib/auth/guards';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
@@ -12,15 +13,8 @@ export default async function WaiterDashboardPage() {
   const supabase = await createServerSupabaseClient();
   const today = new Date().toISOString().slice(0, 10);
 
-  let todaySalesQuery = supabase
-    .from('sales')
-    .select('total, payment_method')
-    .gte('sold_at', `${today}T00:00:00`)
-    .lte('sold_at', `${today}T23:59:59`);
-
-  if (auth.activeRole === 'waiter') {
-    todaySalesQuery = todaySalesQuery.eq('sold_by', auth.userId);
-  }
+  let todaySalesQuery = supabase.from('sales').select('total, payment_method').gte('sold_at', `${today}T00:00:00`).lte('sold_at', `${today}T23:59:59`);
+  if (auth.activeRole === 'waiter') todaySalesQuery = todaySalesQuery.eq('sold_by', auth.userId);
 
   const { data: todaySales } = await todaySalesQuery;
 
@@ -34,22 +28,18 @@ export default async function WaiterDashboardPage() {
   }
 
   return (
-    <DashboardShell
-      role={auth.activeRole === 'owner' ? 'owner' : 'waiter'}
-      title="Waiter Dashboard"
-      description="Today summary for sales with quick access to POS and debt collection."
-    >
-      <div className="mb-4 grid gap-3 md:grid-cols-4">
-        <div className="rounded border p-3"><p className="text-xs text-slate-500">Today total</p><p className="text-lg font-semibold">{money(totals.all)}</p></div>
-        <div className="rounded border p-3"><p className="text-xs text-slate-500">Cash</p><p className="text-lg font-semibold">{money(totals.cash)}</p></div>
-        <div className="rounded border p-3"><p className="text-xs text-slate-500">Mpesa</p><p className="text-lg font-semibold">{money(totals.mpesa)}</p></div>
-        <div className="rounded border p-3"><p className="text-xs text-slate-500">Debt</p><p className="text-lg font-semibold">{money(totals.debt)}</p></div>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <Link href="/waiter/pos" className="rounded bg-black px-4 py-2 text-sm text-white">Open POS</Link>
-        <Link href="/waiter/debts" className="rounded border px-4 py-2 text-sm">Debt collections</Link>
-        <Link href="/waiter/history" className="rounded border px-4 py-2 text-sm">Sales history</Link>
-      </div>
+    <DashboardShell role={auth.activeRole === 'owner' ? 'owner' : 'waiter'} title="Waiter dashboard" description="Fast shift view with direct access to POS and debt collection.">
+      <section className="kpi-grid">
+        <MetricCard label="Today total" value={money(totals.all)} />
+        <MetricCard label="Cash" value={money(totals.cash)} />
+        <MetricCard label="Mpesa" value={money(totals.mpesa)} />
+        <MetricCard label="Debt" value={money(totals.debt)} />
+      </section>
+      <section className="panel" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <Link href="/waiter/pos" className="btn btn-primary">Open POS</Link>
+        <Link href="/waiter/debts" className="btn btn-secondary">Debt collections</Link>
+        <Link href="/waiter/history" className="btn btn-secondary">Sales history</Link>
+      </section>
     </DashboardShell>
   );
 }
