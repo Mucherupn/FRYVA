@@ -19,22 +19,10 @@ export function PurchasesWorkflow({ defaultDate, menuItems }: { defaultDate: str
     const qty = Number(form.qty);
     const unit_cost = Number(form.unit_cost);
     const total_cost = Number(form.total_cost || computedTotal);
-    if (!form.item_name.trim() || !form.unit.trim() || qty <= 0 || unit_cost < 0 || total_cost <= 0) {
-      setError('Fill required fields with positive values.');
-      return;
-    }
+    if (!form.item_name.trim() || !form.unit.trim() || qty <= 0 || unit_cost < 0 || total_cost <= 0) return setError('Fill required fields with positive values.');
 
     startTransition(async () => {
-      const result = await recordPurchaseAction({
-        ...form,
-        qty,
-        unit_cost,
-        total_cost,
-        category: form.category || undefined,
-        supplier: form.supplier || undefined,
-        note: form.note || undefined,
-        menu_item_id: form.menu_item_id ? Number(form.menu_item_id) : undefined,
-      });
+      const result = await recordPurchaseAction({ ...form, qty, unit_cost, total_cost, category: form.category || undefined, supplier: form.supplier || undefined, note: form.note || undefined, menu_item_id: form.menu_item_id ? Number(form.menu_item_id) : undefined });
       if (!result.ok) return setError(result.error);
       setSuccess('Purchase saved and posted to ledger.');
       setForm((prev) => ({ ...prev, item_name: '', qty: '', unit_cost: '', total_cost: '', note: '' }));
@@ -42,41 +30,24 @@ export function PurchasesWorkflow({ defaultDate, menuItems }: { defaultDate: str
   };
 
   return (
-    <section className="space-y-3 rounded border p-4">
-      <div className="grid gap-3 md:grid-cols-3">
-        <select
-          value={form.menu_item_id}
-          onChange={(e) => {
-            const value = e.target.value;
-            const matched = menuItems.find((item) => String(item.id) === value);
-            setForm({
-              ...form,
-              menu_item_id: value,
-              item_name: matched ? matched.name : form.item_name,
-              category: matched?.category ?? form.category,
-            });
-          }}
-          className="rounded border px-3 py-2 text-sm"
-        >
-          <option value="">Link to menu item (recommended)</option>
-          {menuItems.map((item) => (
-            <option key={item.id} value={item.id}>{item.name}{item.category ? ` (${item.category})` : ''}</option>
-          ))}
-        </select>
-        <input value={form.item_name} onChange={(e) => setForm({ ...form, item_name: e.target.value })} placeholder="Item name" className="rounded border px-3 py-2 text-sm" />
-        <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Category" className="rounded border px-3 py-2 text-sm" />
-        <input value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} placeholder="Supplier (optional)" className="rounded border px-3 py-2 text-sm" />
-        <input value={form.qty} onChange={(e) => setForm({ ...form, qty: e.target.value })} placeholder="Quantity" inputMode="decimal" className="rounded border px-3 py-2 text-sm" />
-        <input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="Unit" className="rounded border px-3 py-2 text-sm" />
-        <input value={form.unit_cost} onChange={(e) => setForm({ ...form, unit_cost: e.target.value })} placeholder="Unit cost" inputMode="decimal" className="rounded border px-3 py-2 text-sm" />
-        <input value={form.total_cost} onChange={(e) => setForm({ ...form, total_cost: e.target.value })} placeholder={`Total cost (${computedTotal.toFixed(2)})`} inputMode="decimal" className="rounded border px-3 py-2 text-sm" />
-        <select value={form.payment_method} onChange={(e) => setForm({ ...form, payment_method: e.target.value as 'cash' | 'mpesa' })} className="rounded border px-3 py-2 text-sm"><option value="cash">Cash</option><option value="mpesa">Mpesa</option></select>
-        <input type="date" value={form.purchase_date} onChange={(e) => setForm({ ...form, purchase_date: e.target.value })} className="rounded border px-3 py-2 text-sm" />
+    <section className="panel">
+      <h2 className="section-title">Record purchase</h2>
+      <div className="form-grid">
+        <div className="form-col-6"><select value={form.menu_item_id} onChange={(e) => { const value = e.target.value; const matched = menuItems.find((item) => String(item.id) === value); setForm({ ...form, menu_item_id: value, item_name: matched ? matched.name : form.item_name, category: matched?.category ?? form.category }); }} className="select"><option value="">Link to menu item (recommended)</option>{menuItems.map((item) => <option key={item.id} value={item.id}>{item.name}{item.category ? ` (${item.category})` : ''}</option>)}</select></div>
+        <div className="form-col-6"><input value={form.item_name} onChange={(e) => setForm({ ...form, item_name: e.target.value })} placeholder="Item name" className="input" /></div>
+        <div className="form-col-4"><input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Category" className="input" /></div>
+        <div className="form-col-4"><input value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} placeholder="Supplier" className="input" /></div>
+        <div className="form-col-4"><input value={form.purchase_date} type="date" onChange={(e) => setForm({ ...form, purchase_date: e.target.value })} className="input" /></div>
+        <div className="form-col-4"><input value={form.qty} onChange={(e) => setForm({ ...form, qty: e.target.value })} placeholder="Quantity" className="input" /></div>
+        <div className="form-col-4"><input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="Unit" className="input" /></div>
+        <div className="form-col-4"><input value={form.unit_cost} onChange={(e) => setForm({ ...form, unit_cost: e.target.value })} placeholder="Unit cost" className="input" /></div>
+        <div className="form-col-6"><input value={form.total_cost} onChange={(e) => setForm({ ...form, total_cost: e.target.value })} placeholder={`Total cost (auto ${computedTotal.toFixed(2)})`} className="input" /></div>
+        <div className="form-col-6"><select value={form.payment_method} onChange={(e) => setForm({ ...form, payment_method: e.target.value as 'cash' | 'mpesa' })} className="select"><option value="cash">Cash</option><option value="mpesa">Mpesa</option></select></div>
+        <div className="form-col-12"><textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="Note" className="textarea" /></div>
       </div>
-      <textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="Note (optional)" className="w-full rounded border px-3 py-2 text-sm" rows={2} />
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
-      {success ? <p className="text-sm text-green-700">{success}</p> : null}
-      <button type="button" onClick={submit} disabled={isPending} className="rounded bg-black px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{isPending ? 'Saving...' : 'Save purchase'}</button>
+      {error ? <p className="alert alert-error" style={{ marginTop: 10 }}>{error}</p> : null}
+      {success ? <p className="alert alert-success" style={{ marginTop: 10 }}>{success}</p> : null}
+      <button type="button" onClick={submit} disabled={isPending} className="btn btn-primary" style={{ marginTop: 10 }}>{isPending ? 'Saving...' : 'Save purchase'}</button>
     </section>
   );
 }

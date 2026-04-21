@@ -13,64 +13,40 @@ export function OpeningStockWorkflow({ items, defaultDate }: { items: Item[]; de
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const rows = useMemo(
-    () => items.map((item) => ({ ...item, qty: Number(values[item.id] || '0') })),
-    [items, values],
-  );
+  const rows = useMemo(() => items.map((item) => ({ ...item, qty: Number(values[item.id] || '0') })), [items, values]);
 
   const saveBulk = () => {
-    setError(null);
-    setSuccess(null);
+    setError(null); setSuccess(null);
     const changed = rows.filter((row) => !Number.isNaN(row.qty) && row.qty >= 0);
-    if (changed.length === 0) {
-      setError('Enter at least one quantity.');
-      return;
-    }
+    if (changed.length === 0) return setError('Enter at least one quantity.');
 
     startTransition(async () => {
-      const result = await recordOpeningStockAction({
-        entry_date: entryDate,
-        note: note || undefined,
-        items: changed.map((row) => ({ menu_item_id: row.id, qty: row.qty })),
-      });
-
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-
-      setSuccess('Opening stock saved. Same-day edits will create revision history.');
+      const result = await recordOpeningStockAction({ entry_date: entryDate, note: note || undefined, items: changed.map((row) => ({ menu_item_id: row.id, qty: row.qty })) });
+      if (!result.ok) return setError(result.error);
+      setSuccess('Opening stock saved. Same-day edits create revision history.');
     });
   };
 
   return (
-    <section className="space-y-4">
-      <div className="grid gap-2 md:grid-cols-[180px_1fr_auto]">
-        <input type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} className="rounded border px-3 py-2 text-sm" />
-        <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" className="rounded border px-3 py-2 text-sm" />
-        <button type="button" onClick={saveBulk} disabled={isPending} className="rounded bg-black px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
-          {isPending ? 'Saving...' : 'Save bulk stock'}
-        </button>
+    <section className="panel">
+      <h2 className="section-title">Bulk opening stock entry</h2>
+      <div className="form-grid">
+        <div className="form-col-4"><input type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} className="input" /></div>
+        <div className="form-col-8"><input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Batch note" className="input" /></div>
       </div>
-      <div className="space-y-2">
-        {rows.map((row) => (
-          <div key={row.id} className="grid grid-cols-[1fr_120px] items-center gap-3 rounded border p-3">
-            <div>
-              <p className="text-sm font-semibold">{row.name}</p>
-              <p className="text-xs text-slate-500">{row.category_name}</p>
-            </div>
-            <input
-              inputMode="decimal"
-              value={values[row.id] ?? ''}
-              onChange={(e) => setValues((prev) => ({ ...prev, [row.id]: e.target.value }))}
-              placeholder="Qty"
-              className="rounded border px-3 py-2 text-right text-sm"
-            />
-          </div>
-        ))}
+      <div className="table-shell" style={{ marginTop: 12 }}>
+        <table className="table">
+          <thead><tr><th>Item</th><th>Category</th><th className="money">Qty</th></tr></thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.id}><td>{row.name}</td><td>{row.category_name}</td><td className="money"><input value={values[row.id] ?? ''} onChange={(e) => setValues((prev) => ({ ...prev, [row.id]: e.target.value }))} className="input" style={{ width: 96, marginLeft: 'auto' }} /></td></tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
-      {success ? <p className="text-sm text-green-700">{success}</p> : null}
+      {error ? <p className="alert alert-error" style={{ marginTop: 10 }}>{error}</p> : null}
+      {success ? <p className="alert alert-success" style={{ marginTop: 10 }}>{success}</p> : null}
+      <button type="button" onClick={saveBulk} disabled={isPending} className="btn btn-primary" style={{ marginTop: 10 }}>{isPending ? 'Saving...' : 'Save bulk stock'}</button>
     </section>
   );
 }

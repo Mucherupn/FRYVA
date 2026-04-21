@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { finalizeSaleAction } from '@/app/(dashboard)/waiter/pos/actions';
+import { EmptyState } from '@/components/ui/fryva-ui';
 
 type MenuItem = {
   id: number;
@@ -29,17 +30,12 @@ export function PosWorkflow({ menuItems }: PosWorkflowProps) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const subtotal = useMemo(
-    () => cart.reduce((sum, line) => sum + line.quantity * line.item.selling_price, 0),
-    [cart],
-  );
+  const subtotal = useMemo(() => cart.reduce((sum, line) => sum + line.quantity * line.item.selling_price, 0), [cart]);
 
   const addItem = (item: MenuItem) => {
     setCart((prev) => {
       const index = prev.findIndex((line) => line.item.id === item.id);
-      if (index === -1) {
-        return [...prev, { item, quantity: 1 }];
-      }
+      if (index === -1) return [...prev, { item, quantity: 1 }];
       const next = [...prev];
       next[index] = { ...next[index], quantity: next[index].quantity + 1 };
       return next;
@@ -47,11 +43,7 @@ export function PosWorkflow({ menuItems }: PosWorkflowProps) {
   };
 
   const setQuantity = (itemId: number, quantity: number) => {
-    setCart((prev) =>
-      prev
-        .map((line) => (line.item.id === itemId ? { ...line, quantity } : line))
-        .filter((line) => line.quantity > 0),
-    );
+    setCart((prev) => prev.map((line) => (line.item.id === itemId ? { ...line, quantity } : line)).filter((line) => line.quantity > 0));
   };
 
   const clearSaleFields = () => {
@@ -66,15 +58,8 @@ export function PosWorkflow({ menuItems }: PosWorkflowProps) {
     setError(null);
     setFeedback(null);
 
-    if (cart.length === 0) {
-      setError('Cart is empty. Add at least one item.');
-      return;
-    }
-
-    if (paymentMethod === 'debt' && !debtorName.trim()) {
-      setError('Debtor name is required for debt sales.');
-      return;
-    }
+    if (cart.length === 0) return setError('Cart is empty. Add at least one item.');
+    if (paymentMethod === 'debt' && !debtorName.trim()) return setError('Debtor name is required for debt sales.');
 
     startTransition(async () => {
       const result = await finalizeSaleAction({
@@ -86,10 +71,7 @@ export function PosWorkflow({ menuItems }: PosWorkflowProps) {
         debt_note: paymentMethod === 'debt' ? debtNote : undefined,
       });
 
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
+      if (!result.ok) return setError(result.error);
 
       setFeedback(`Sale ${result.data.sale_number} completed successfully.`);
       clearSaleFields();
@@ -97,127 +79,75 @@ export function PosWorkflow({ menuItems }: PosWorkflowProps) {
   };
 
   return (
-    <div className="space-y-6">
-      <section>
-        <h2 className="mb-3 text-base font-semibold">Tap to add items</h2>
+    <div className="pos-layout">
+      <section className="panel">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <h2 className="section-title">Menu items</h2>
+          <p className="section-subtitle">Tap to add quickly</p>
+        </div>
         {menuItems.length === 0 ? (
-          <p className="rounded border border-dashed p-4 text-sm text-slate-500">No active menu items found.</p>
+          <EmptyState title="No active menu items" description="Activate menu items to start sales." />
         ) : (
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+          <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
             {menuItems.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => addItem(item)}
-                className="rounded-lg border bg-white p-4 text-left shadow-sm transition hover:border-black"
-              >
-                <p className="text-sm font-semibold">{item.name}</p>
-                <p className="text-xs text-slate-500">{item.category_name}</p>
-                <p className="mt-2 text-sm font-medium">{money(item.selling_price)}</p>
+              <button key={item.id} type="button" onClick={() => addItem(item)} className="row-card" style={{ textAlign: 'left', cursor: 'pointer' }}>
+                <p style={{ margin: 0, fontWeight: 650 }}>{item.name}</p>
+                <p className="section-subtitle" style={{ marginTop: 2 }}>{item.category_name}</p>
+                <p style={{ margin: '8px 0 0', fontWeight: 700 }}>{money(item.selling_price)}</p>
               </button>
             ))}
           </div>
         )}
       </section>
 
-      <section className="space-y-3 rounded-lg border p-4">
-        <h2 className="text-base font-semibold">Cart summary</h2>
-        {cart.length === 0 ? (
-          <p className="text-sm text-slate-500">Your cart is empty.</p>
-        ) : (
-          <div className="space-y-2">
+      <section className="panel">
+        <h2 className="section-title">Cart & checkout</h2>
+        {cart.length === 0 ? <EmptyState title="Cart is empty" description="Select items from the menu to start this sale." /> : (
+          <div className="list-stack">
             {cart.map((line) => (
-              <div key={line.item.id} className="grid grid-cols-[1fr_auto] items-center gap-4 rounded border p-3">
+              <div key={line.item.id} className="row-card" style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', gap: 10 }}>
                 <div>
-                  <p className="text-sm font-semibold">{line.item.name}</p>
-                  <p className="text-xs text-slate-500">{money(line.item.selling_price)} each</p>
+                  <p style={{ margin: 0, fontWeight: 600 }}>{line.item.name}</p>
+                  <p className="section-subtitle" style={{ marginTop: 2 }}>{money(line.item.selling_price)} each</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => setQuantity(line.item.id, line.quantity - 1)} className="rounded border px-2">
-                    -
-                  </button>
-                  <input
-                    value={line.quantity}
-                    onChange={(event) => setQuantity(line.item.id, Number(event.target.value) || 0)}
-                    className="w-14 rounded border px-2 py-1 text-center text-sm"
-                    inputMode="numeric"
-                  />
-                  <button type="button" onClick={() => setQuantity(line.item.id, line.quantity + 1)} className="rounded border px-2">
-                    +
-                  </button>
-                  <button type="button" onClick={() => setQuantity(line.item.id, 0)} className="rounded border px-2 text-xs text-red-600">
-                    Remove
-                  </button>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setQuantity(line.item.id, line.quantity - 1)}>-</button>
+                  <input value={line.quantity} onChange={(e) => setQuantity(line.item.id, Number(e.target.value) || 0)} className="input" style={{ width: 62, textAlign: 'center' }} inputMode="numeric" />
+                  <button type="button" className="btn btn-secondary" onClick={() => setQuantity(line.item.id, line.quantity + 1)}>+</button>
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        <div className="space-y-1 border-t pt-3 text-sm">
-          <p className="flex justify-between"><span>Subtotal</span><span>{money(subtotal)}</span></p>
-          <p className="flex justify-between font-semibold"><span>Total</span><span>{money(subtotal)}</span></p>
-        </div>
-      </section>
-
-      <section className="space-y-3 rounded-lg border p-4">
-        <h2 className="text-base font-semibold">Checkout</h2>
-        <div className="grid gap-3 md:grid-cols-3">
-          {(['cash', 'mpesa', 'debt'] as const).map((method) => (
-            <label key={method} className="flex items-center gap-2 rounded border p-3 text-sm capitalize">
-              <input
-                type="radio"
-                checked={paymentMethod === method}
-                onChange={() => setPaymentMethod(method)}
-              />
-              {method}
-            </label>
-          ))}
+        <div className="row-card" style={{ marginTop: 12 }}>
+          <p style={{ display: 'flex', justifyContent: 'space-between', margin: 0 }}><span>Subtotal</span><strong>{money(subtotal)}</strong></p>
         </div>
 
-        {paymentMethod === 'debt' ? (
-          <div className="grid gap-3 md:grid-cols-2">
-            <input
-              value={debtorName}
-              onChange={(e) => setDebtorName(e.target.value)}
-              placeholder="Debtor name (required)"
-              className="rounded border px-3 py-2 text-sm"
-            />
-            <input
-              value={debtorPhone}
-              onChange={(e) => setDebtorPhone(e.target.value)}
-              placeholder="Phone (optional)"
-              className="rounded border px-3 py-2 text-sm"
-            />
-            <textarea
-              value={debtNote}
-              onChange={(e) => setDebtNote(e.target.value)}
-              placeholder="Debt note (optional)"
-              className="md:col-span-2 rounded border px-3 py-2 text-sm"
-              rows={2}
-            />
+        <div className="list-stack" style={{ marginTop: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            {(['cash', 'mpesa', 'debt'] as const).map((method) => (
+              <button key={method} type="button" onClick={() => setPaymentMethod(method)} className={`btn ${paymentMethod === method ? 'btn-primary' : 'btn-secondary'}`}>
+                {method}
+              </button>
+            ))}
           </div>
-        ) : null}
 
-        <textarea
-          value={saleNote}
-          onChange={(e) => setSaleNote(e.target.value)}
-          placeholder="Sale note (optional)"
-          className="w-full rounded border px-3 py-2 text-sm"
-          rows={2}
-        />
+          {paymentMethod === 'debt' ? (
+            <>
+              <input value={debtorName} onChange={(e) => setDebtorName(e.target.value)} placeholder="Debtor name" className="input" />
+              <input value={debtorPhone} onChange={(e) => setDebtorPhone(e.target.value)} placeholder="Phone (optional)" className="input" />
+              <textarea value={debtNote} onChange={(e) => setDebtNote(e.target.value)} placeholder="Debt note" className="textarea" />
+            </>
+          ) : null}
 
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
-        {feedback ? <p className="text-sm text-green-700">{feedback}</p> : null}
-
-        <button
-          type="button"
-          onClick={checkout}
-          disabled={isPending}
-          className="w-full rounded bg-black px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
-        >
-          {isPending ? 'Finalizing sale...' : 'Finalize sale'}
-        </button>
+          <textarea value={saleNote} onChange={(e) => setSaleNote(e.target.value)} placeholder="Sale note" className="textarea" />
+          {error ? <p className="alert alert-error">{error}</p> : null}
+          {feedback ? <p className="alert alert-success">{feedback}</p> : null}
+          <button type="button" onClick={checkout} disabled={isPending} className="btn btn-primary" style={{ width: '100%' }}>
+            {isPending ? 'Finalizing sale...' : 'Finalize sale'}
+          </button>
+        </div>
       </section>
     </div>
   );

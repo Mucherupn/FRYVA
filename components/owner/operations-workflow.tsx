@@ -1,17 +1,10 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import {
-  closeDayAction,
-  createReconciliationAction,
-  voidExpenseAction,
-  voidPurchaseAction,
-  voidSaleAction,
-  writeOffDebtAction,
-} from '@/app/(dashboard)/owner/operations/actions';
+import { useState, useTransition, type ReactNode } from 'react';
+import { closeDayAction, createReconciliationAction, voidExpenseAction, voidPurchaseAction, voidSaleAction, writeOffDebtAction } from '@/app/(dashboard)/owner/operations/actions';
 
-function Notice({ message, ok }: { message: string; ok: boolean }) {
-  return <p className={`text-xs ${ok ? 'text-emerald-700' : 'text-red-700'}`}>{message}</p>;
+function Block({ title, hint, children, danger = false }: { title: string; hint?: string; children: ReactNode; danger?: boolean }) {
+  return <section className="panel" style={{ borderColor: danger ? '#fecaca' : undefined, background: danger ? '#fff7f7' : undefined }}><h3 className="section-title">{title}</h3>{hint ? <p className="section-subtitle" style={{ marginBottom: 10 }}>{hint}</p> : null}{children}</section>;
 }
 
 export function OperationsWorkflow({ today }: { today: string }) {
@@ -27,114 +20,44 @@ export function OperationsWorkflow({ today }: { today: string }) {
   };
 
   return (
-    <div className="space-y-5">
-      {msg ? <Notice message={msg.text} ok={msg.ok} /> : null}
+    <div className="list-stack">
+      {msg ? <p className={`alert ${msg.ok ? 'alert-success' : 'alert-error'}`}>{msg.text}</p> : null}
 
-      <section className="rounded border p-3">
-        <h2 className="text-sm font-semibold">Sale void</h2>
-        <p className="mb-2 text-xs text-slate-500">Creates reversal entries and preserves original sale record.</p>
-        <form
-          className="grid gap-2 md:grid-cols-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const form = new FormData(event.currentTarget);
-            submit(() => voidSaleAction({ sale_id: String(form.get('sale_id') || ''), reason: String(form.get('reason') || '') }));
-          }}
-        >
-          <input name="sale_id" placeholder="Sale UUID" className="rounded border px-2 py-1 text-sm" required />
-          <input name="reason" placeholder="Reason" className="rounded border px-2 py-1 text-sm" required />
-          <button disabled={pending} className="rounded bg-black px-3 py-2 text-sm text-white">Void sale</button>
+      <Block title="Sale void" hint="Creates reversal entries and preserves original sale record." danger>
+        <form className="form-grid" onSubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); submit(() => voidSaleAction({ sale_id: String(form.get('sale_id') || ''), reason: String(form.get('reason') || '') })); }}>
+          <div className="form-col-6"><input name="sale_id" placeholder="Sale UUID" className="input" required /></div><div className="form-col-4"><input name="reason" placeholder="Reason" className="input" required /></div><div className="form-col-2"><button disabled={pending} className="btn btn-danger">Void sale</button></div>
         </form>
-      </section>
+      </Block>
 
-      <section className="rounded border p-3">
-        <h2 className="text-sm font-semibold">Expense void</h2>
-        <form
-          className="grid gap-2 md:grid-cols-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const form = new FormData(event.currentTarget);
-            submit(() => voidExpenseAction({ expense_id: String(form.get('expense_id') || ''), reason: String(form.get('reason') || '') }));
-          }}
-        >
-          <input name="expense_id" placeholder="Expense UUID" className="rounded border px-2 py-1 text-sm" required />
-          <input name="reason" placeholder="Reason" className="rounded border px-2 py-1 text-sm" required />
-          <button disabled={pending} className="rounded bg-black px-3 py-2 text-sm text-white">Void expense</button>
+      <Block title="Expense void" danger>
+        <form className="form-grid" onSubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); submit(() => voidExpenseAction({ expense_id: String(form.get('expense_id') || ''), reason: String(form.get('reason') || '') })); }}>
+          <div className="form-col-6"><input name="expense_id" placeholder="Expense UUID" className="input" required /></div><div className="form-col-4"><input name="reason" placeholder="Reason" className="input" required /></div><div className="form-col-2"><button disabled={pending} className="btn btn-danger">Void expense</button></div>
         </form>
-      </section>
+      </Block>
 
-      <section className="rounded border p-3">
-        <h2 className="text-sm font-semibold">Purchase void</h2>
-        <form
-          className="grid gap-2 md:grid-cols-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const form = new FormData(event.currentTarget);
-            submit(() => voidPurchaseAction({ purchase_id: String(form.get('purchase_id') || ''), reason: String(form.get('reason') || '') }));
-          }}
-        >
-          <input name="purchase_id" placeholder="Purchase UUID" className="rounded border px-2 py-1 text-sm" required />
-          <input name="reason" placeholder="Reason" className="rounded border px-2 py-1 text-sm" required />
-          <button disabled={pending} className="rounded bg-black px-3 py-2 text-sm text-white">Void purchase</button>
+      <Block title="Purchase void" danger>
+        <form className="form-grid" onSubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); submit(() => voidPurchaseAction({ purchase_id: String(form.get('purchase_id') || ''), reason: String(form.get('reason') || '') })); }}>
+          <div className="form-col-6"><input name="purchase_id" placeholder="Purchase UUID" className="input" required /></div><div className="form-col-4"><input name="reason" placeholder="Reason" className="input" required /></div><div className="form-col-2"><button disabled={pending} className="btn btn-danger">Void purchase</button></div>
         </form>
-      </section>
+      </Block>
 
-      <section className="rounded border p-3">
-        <h2 className="text-sm font-semibold">Cash / Mpesa reconciliation</h2>
-        <form
-          className="grid gap-2 md:grid-cols-5"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const form = new FormData(event.currentTarget);
-            submit(() =>
-              createReconciliationAction({
-                recon_type: String(form.get('recon_type') || 'cash') as 'cash' | 'mpesa',
-                actual_balance: Number(form.get('actual_balance')),
-                recon_date: String(form.get('recon_date') || today),
-                note: String(form.get('note') || ''),
-              }),
-            );
-          }}
-        >
-          <select name="recon_type" className="rounded border px-2 py-1 text-sm"><option value="cash">Cash</option><option value="mpesa">Mpesa</option></select>
-          <input name="actual_balance" placeholder="Actual balance" type="number" step="0.01" className="rounded border px-2 py-1 text-sm" required />
-          <input name="recon_date" defaultValue={today} type="date" className="rounded border px-2 py-1 text-sm" required />
-          <input name="note" placeholder="Variance note" className="rounded border px-2 py-1 text-sm" />
-          <button disabled={pending} className="rounded bg-black px-3 py-2 text-sm text-white">Save reconciliation</button>
+      <Block title="Cash / Mpesa reconciliation" hint="Capture expected versus actual balance and variance note.">
+        <form className="form-grid" onSubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); submit(() => createReconciliationAction({ recon_type: String(form.get('recon_type') || 'cash') as 'cash' | 'mpesa', actual_balance: Number(form.get('actual_balance')), recon_date: String(form.get('recon_date') || today), note: String(form.get('note') || '') })); }}>
+          <div className="form-col-3"><select name="recon_type" className="select"><option value="cash">Cash</option><option value="mpesa">Mpesa</option></select></div><div className="form-col-3"><input name="actual_balance" placeholder="Actual balance" type="number" step="0.01" className="input" required /></div><div className="form-col-2"><input name="recon_date" defaultValue={today} type="date" className="input" required /></div><div className="form-col-2"><input name="note" placeholder="Variance note" className="input" /></div><div className="form-col-2"><button disabled={pending} className="btn btn-primary">Save</button></div>
         </form>
-      </section>
+      </Block>
 
-      <section className="rounded border p-3">
-        <h2 className="text-sm font-semibold">Debt write-off foundation (owner)</h2>
-        <form
-          className="grid gap-2 md:grid-cols-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const form = new FormData(event.currentTarget);
-            submit(() => writeOffDebtAction({ debt_id: String(form.get('debt_id') || ''), reason: String(form.get('reason') || '') }));
-          }}
-        >
-          <input name="debt_id" placeholder="Debt UUID" className="rounded border px-2 py-1 text-sm" required />
-          <input name="reason" placeholder="Reason" className="rounded border px-2 py-1 text-sm" required />
-          <button disabled={pending} className="rounded bg-black px-3 py-2 text-sm text-white">Write off debt</button>
+      <Block title="Debt write-off" hint="Sensitive owner-only action." danger>
+        <form className="form-grid" onSubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); submit(() => writeOffDebtAction({ debt_id: String(form.get('debt_id') || ''), reason: String(form.get('reason') || '') })); }}>
+          <div className="form-col-6"><input name="debt_id" placeholder="Debt UUID" className="input" required /></div><div className="form-col-4"><input name="reason" placeholder="Reason" className="input" required /></div><div className="form-col-2"><button disabled={pending} className="btn btn-danger">Write off</button></div>
         </form>
-      </section>
+      </Block>
 
-      <section className="rounded border p-3">
-        <h2 className="text-sm font-semibold">End of day close</h2>
-        <form
-          className="grid gap-2 md:grid-cols-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const form = new FormData(event.currentTarget);
-            submit(() => closeDayAction({ close_date: String(form.get('close_date') || today), note: String(form.get('note') || '') }));
-          }}
-        >
-          <input name="close_date" defaultValue={today} type="date" className="rounded border px-2 py-1 text-sm" required />
-          <input name="note" placeholder="Optional closing note" className="rounded border px-2 py-1 text-sm" />
-          <button disabled={pending} className="rounded bg-black px-3 py-2 text-sm text-white">Close day</button>
+      <Block title="End of day close">
+        <form className="form-grid" onSubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); submit(() => closeDayAction({ close_date: String(form.get('close_date') || today), note: String(form.get('note') || '') })); }}>
+          <div className="form-col-4"><input name="close_date" defaultValue={today} type="date" className="input" required /></div><div className="form-col-6"><input name="note" placeholder="Optional closing note" className="input" /></div><div className="form-col-2"><button disabled={pending} className="btn btn-primary">Close day</button></div>
         </form>
-      </section>
+      </Block>
     </div>
   );
 }

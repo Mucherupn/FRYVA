@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { recordDebtPaymentAction } from '@/app/(dashboard)/waiter/debts/actions';
+import { EmptyState, StatusChip } from '@/components/ui/fryva-ui';
 
 type DebtRow = {
   id: string;
@@ -28,41 +29,20 @@ export function DebtsWorkflow({ debts, ownerMode }: { debts: DebtRow[]; ownerMod
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const visibleDebts = useMemo(
-    () => debts.filter((debt) => (statusFilter === 'all' ? true : debt.status === statusFilter)),
-    [debts, statusFilter],
-  );
-
+  const visibleDebts = useMemo(() => debts.filter((debt) => (statusFilter === 'all' ? true : debt.status === statusFilter)), [debts, statusFilter]);
   const selectedDebt = visibleDebts.find((debt) => debt.id === selectedDebtId) ?? null;
 
   const submitPayment = () => {
-    if (!selectedDebt) {
-      setError('Select a debt first.');
-      return;
-    }
-
+    if (!selectedDebt) return setError('Select a debt first.');
     const value = Number(amount);
-    if (!value || value <= 0) {
-      setError('Enter a valid payment amount.');
-      return;
-    }
+    if (!value || value <= 0) return setError('Enter a valid payment amount.');
 
     setError(null);
     setSuccess(null);
 
     startTransition(async () => {
-      const result = await recordDebtPaymentAction({
-        debt_id: selectedDebt.id,
-        amount: value,
-        payment_method: paymentMethod,
-        note: note || undefined,
-      });
-
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-
+      const result = await recordDebtPaymentAction({ debt_id: selectedDebt.id, amount: value, payment_method: paymentMethod, note: note || undefined });
+      if (!result.ok) return setError(result.error);
       setSuccess('Payment recorded successfully.');
       setAmount('');
       setNote('');
@@ -70,34 +50,28 @@ export function DebtsWorkflow({ debts, ownerMode }: { debts: DebtRow[]; ownerMod
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="list-stack">
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {(['all', 'unpaid', 'partial', 'paid'] as const).map((value) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setStatusFilter(value)}
-            className={`rounded border px-3 py-1 text-xs uppercase ${statusFilter === value ? 'bg-black text-white' : ''}`}
-          >
+          <button key={value} type="button" onClick={() => setStatusFilter(value)} className={`btn ${statusFilter === value ? 'btn-primary' : 'btn-secondary'}`}>
             {value}
           </button>
         ))}
       </div>
 
       {visibleDebts.length === 0 ? (
-        <p className="rounded border border-dashed p-4 text-sm text-slate-500">No debts found for this filter.</p>
+        <EmptyState title="No debts found" description="Adjust filters or create debt sales from POS." />
       ) : (
-        <div className="space-y-2">
+        <div className="list-stack">
           {visibleDebts.map((debt) => (
-            <button
-              type="button"
-              key={debt.id}
-              onClick={() => setSelectedDebtId(debt.id)}
-              className={`w-full rounded border p-3 text-left text-sm ${selectedDebtId === debt.id ? 'border-black' : ''}`}
-            >
-              <p className="font-semibold">{debt.debtor_name} · {money(debt.remaining_amount)} remaining</p>
-              <p className="text-xs text-slate-500">
-                Status: {debt.status} · Created: {new Date(debt.created_at).toLocaleDateString()} {ownerMode ? `· Waiter: ${debt.assigned_waiter_name}` : ''}
+            <button type="button" key={debt.id} onClick={() => setSelectedDebtId(debt.id)} className="row-card" style={{ textAlign: 'left', borderColor: selectedDebtId === debt.id ? '#c1121f' : undefined }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                <p style={{ margin: 0, fontWeight: 650 }}>{debt.debtor_name}</p>
+                <StatusChip status={debt.status} />
+              </div>
+              <p style={{ margin: '6px 0 0', fontWeight: 700 }}>{money(debt.remaining_amount)} remaining</p>
+              <p className="section-subtitle" style={{ marginTop: 6 }}>
+                Original {money(debt.original_amount)} · {new Date(debt.created_at).toLocaleDateString()} {ownerMode ? `· ${debt.assigned_waiter_name}` : ''}
               </p>
             </button>
           ))}
@@ -105,42 +79,19 @@ export function DebtsWorkflow({ debts, ownerMode }: { debts: DebtRow[]; ownerMod
       )}
 
       {selectedDebt ? (
-        <section className="space-y-3 rounded-lg border p-4">
-          <h3 className="font-semibold">Record payment</h3>
-          <p className="text-xs text-slate-600">
-            Debtor: {selectedDebt.debtor_name} ({selectedDebt.debtor_phone || 'No phone'}) · Outstanding: {money(selectedDebt.remaining_amount)}
-          </p>
-          <div className="grid gap-3 md:grid-cols-3">
-            <input
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Amount"
-              className="rounded border px-3 py-2 text-sm"
-              inputMode="decimal"
-            />
-            <select
-              value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value as 'cash' | 'mpesa')}
-              className="rounded border px-3 py-2 text-sm"
-            >
-              <option value="cash">Cash</option>
-              <option value="mpesa">Mpesa</option>
-            </select>
-            <input
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Note (optional)"
-              className="rounded border px-3 py-2 text-sm"
-            />
+        <section className="panel">
+          <h3 className="section-title">Record payment</h3>
+          <p className="section-subtitle">Debtor: {selectedDebt.debtor_name} ({selectedDebt.debtor_phone || 'No phone'}) · Outstanding {money(selectedDebt.remaining_amount)}</p>
+          <div className="form-grid" style={{ marginTop: 10 }}>
+            <div className="form-col-4"><input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" className="input" inputMode="decimal" /></div>
+            <div className="form-col-4">
+              <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as 'cash' | 'mpesa')} className="select"><option value="cash">Cash</option><option value="mpesa">Mpesa</option></select>
+            </div>
+            <div className="form-col-4"><input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" className="input" /></div>
           </div>
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
-          {success ? <p className="text-sm text-green-700">{success}</p> : null}
-          <button
-            type="button"
-            disabled={isPending}
-            onClick={submitPayment}
-            className="rounded bg-black px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-          >
+          {error ? <p className="alert alert-error" style={{ marginTop: 10 }}>{error}</p> : null}
+          {success ? <p className="alert alert-success" style={{ marginTop: 10 }}>{success}</p> : null}
+          <button type="button" disabled={isPending} onClick={submitPayment} className="btn btn-primary" style={{ marginTop: 10 }}>
             {isPending ? 'Saving...' : 'Save payment'}
           </button>
         </section>

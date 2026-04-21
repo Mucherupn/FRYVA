@@ -18,10 +18,7 @@ export function LoginForm() {
     setLoading(true);
     setError(null);
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
     if (signInError) {
       setLoading(false);
@@ -65,40 +62,26 @@ export function LoginForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border p-6 shadow-sm">
-      <h1 className="text-xl font-semibold">Fryva Login</h1>
-      <div className="space-y-2">
-        <label className="block text-sm font-medium">Email</label>
-        <input
-          required
-          type="email"
-          className="w-full rounded border px-3 py-2"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="owner@fryva.app"
-        />
+    <form onSubmit={handleSubmit} className="panel" style={{ maxWidth: 480, width: '100%', marginLeft: 'auto' }}>
+      <h2 style={{ margin: 0, fontSize: '1.5rem' }}>Welcome back</h2>
+      <p className="section-subtitle" style={{ marginTop: 6 }}>Sign in to continue your shift and operations.</p>
+
+      <div className="list-stack" style={{ marginTop: 18 }}>
+        <div>
+          <label className="section-subtitle" style={{ display: 'block', marginBottom: 6 }}>Email address</label>
+          <input required type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="owner@fryva.app" />
+        </div>
+
+        <div>
+          <label className="section-subtitle" style={{ display: 'block', marginBottom: 6 }}>Password</label>
+          <input required type="password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <label className="block text-sm font-medium">Password</label>
-        <input
-          required
-          type="password"
-          className="w-full rounded border px-3 py-2"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="••••••••"
-        />
-      </div>
+      {error ? <p className="alert alert-error" style={{ marginTop: 12 }}>{error}</p> : null}
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full rounded bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-      >
-        {loading ? 'Signing in...' : 'Sign in'}
+      <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', marginTop: 14 }}>
+        {loading ? 'Signing in...' : 'Sign in to Fryva'}
       </button>
     </form>
   );
