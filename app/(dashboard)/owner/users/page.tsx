@@ -2,7 +2,8 @@ import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { requireRole } from '@/lib/auth/guards';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { APP_ROLES } from '@/lib/auth/roles';
-import { createUserAction, updateUserRoleAction } from './actions';
+import { updateUserRoleAction } from './actions';
+import { CreateStaffForm } from './create-staff-form';
 
 export default async function OwnerUsersPage() {
   await requireRole(['owner']);
@@ -28,18 +29,7 @@ export default async function OwnerUsersPage() {
     >
       <section className="mb-8 rounded border p-4">
         <h2 className="mb-4 text-lg font-semibold">Create User</h2>
-        <form action={createUserAction} className="grid gap-3 md:grid-cols-4">
-          <input name="full_name" required placeholder="Full name" className="rounded border px-3 py-2" />
-          <input name="email" required type="email" placeholder="Email" className="rounded border px-3 py-2" />
-          <select name="role" className="rounded border px-3 py-2">
-            {APP_ROLES.map((role) => (
-              <option key={role} value={role}>
-                {role}
-              </option>
-            ))}
-          </select>
-          <button className="rounded bg-black px-3 py-2 text-white">Create</button>
-        </form>
+        <CreateStaffForm />
       </section>
 
       <section className="rounded border p-4">

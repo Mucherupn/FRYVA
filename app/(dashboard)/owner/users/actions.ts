@@ -3,42 +3,134 @@
 import { revalidatePath } from 'next/cache';
 import { requireRole } from '@/lib/auth/guards';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
-import type { AppRole } from '@/lib/auth/roles';
+import { APP_ROLES, type AppRole } from '@/lib/auth/roles';
 
-export async function createUserAction(formData: FormData) {
+export type CreateStaffFormState = {
+  status: 'idle' | 'success' | 'error';
+  message?: string;
+  createdUser?: {
+    fullName: string;
+    email: string;
+    role: AppRole;
+  };
+  fieldErrors?: Partial<Record<'full_name' | 'email' | 'password' | 'confirm_password' | 'role', string>>;
+};
+
+export const INITIAL_CREATE_STAFF_FORM_STATE: CreateStaffFormState = {
+  status: 'idle',
+};
+
+function isAppRole(role: string): role is AppRole {
+  return APP_ROLES.includes(role as AppRole);
+}
+
+const MIN_PASSWORD_LENGTH = 8;
+
+export async function createUserAction(
+  _prevState: CreateStaffFormState,
+  formData: FormData,
+): Promise<CreateStaffFormState> {
   const actor = await requireRole(['owner']);
-  const email = String(formData.get('email') ?? '').trim();
+  const email = String(formData.get('email') ?? '').trim().toLowerCase();
   const fullName = String(formData.get('full_name') ?? '').trim();
-  const role = String(formData.get('role') ?? 'waiter') as AppRole;
+  const password = String(formData.get('password') ?? '');
+  const confirmPassword = String(formData.get('confirm_password') ?? '');
+  const role = String(formData.get('role') ?? '').trim();
 
-  if (!email || !fullName) {
-    throw new Error('Email and full name are required.');
+  const fieldErrors: CreateStaffFormState['fieldErrors'] = {};
+
+  if (!fullName) {
+    fieldErrors.full_name = 'Full name is required.';
   }
 
+  if (!email) {
+    fieldErrors.email = 'Email is required.';
+  }
+
+  if (!password) {
+    fieldErrors.password = 'Password is required.';
+  } else if (password.length < MIN_PASSWORD_LENGTH) {
+    fieldErrors.password = `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+  }
+
+  if (!confirmPassword) {
+    fieldErrors.confirm_password = 'Confirm password is required.';
+  } else if (password !== confirmPassword) {
+    fieldErrors.confirm_password = 'Passwords do not match.';
+  }
+
+  if (!role || !isAppRole(role)) {
+    fieldErrors.role = 'Please select a valid role.';
+  }
+
+  if (Object.keys(fieldErrors).length > 0) {
+    return {
+      status: 'error',
+      message: 'Please fix the highlighted fields and try again.',
+      fieldErrors,
+    };
+  }
+
+  const selectedRole = role as AppRole;
   const supabaseAdmin = createSupabaseAdminClient();
 
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
     email,
-    password: crypto.randomUUID(),
+    password,
     email_confirm: true,
     user_metadata: { full_name: fullName },
   });
 
   if (error || !data.user) {
-    throw new Error(error?.message || 'Failed to create user.');
+    return {
+      status: 'error',
+      message: error?.message || 'Failed to create staff user.',
+    };
   }
 
-  const { error: roleError } = await supabaseAdmin.from('user_role_assignments').insert({
-    user_id: data.user.id,
-    role,
-    assigned_by: actor.userId,
-  });
+  try {
+    const { error: roleError } = await supabaseAdmin.from('user_role_assignments').insert({
+      user_id: data.user.id,
+      role: selectedRole,
+      assigned_by: actor.userId,
+    });
 
-  if (roleError) {
-    throw new Error(roleError.message);
+    if (roleError) {
+      throw new Error(roleError.message);
+    }
+
+    const { error: profileError } = await supabaseAdmin.from('profiles').upsert(
+      {
+        id: data.user.id,
+        full_name: fullName,
+        created_by: actor.userId,
+      },
+      { onConflict: 'id' },
+    );
+
+    if (profileError) {
+      throw new Error(profileError.message);
+    }
+  } catch (err) {
+    await supabaseAdmin.auth.admin.deleteUser(data.user.id);
+
+    return {
+      status: 'error',
+      message: err instanceof Error ? err.message : 'Failed to finish staff setup.',
+    };
   }
 
   revalidatePath('/owner/users');
+
+  return {
+    status: 'success',
+    message: 'Staff account created successfully.',
+    createdUser: {
+      fullName,
+      email,
+      role: selectedRole,
+    },
+  };
 }
 
 export async function updateUserRoleAction(formData: FormData) {
