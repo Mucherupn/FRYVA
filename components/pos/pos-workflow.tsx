@@ -71,7 +71,7 @@ export function PosWorkflow({ menuItems }: PosWorkflowProps) {
         debt_note: paymentMethod === 'debt' ? debtNote : undefined,
       });
 
-      if (!result.ok) return setError(result.error);
+      if (!result.ok) return setError(result.error ?? 'Request failed.');
 
       setFeedback(`Sale ${result.data.sale_number} completed successfully.`);
       clearSaleFields();

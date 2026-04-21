@@ -17,6 +17,7 @@ const ROLE_NAV: Record<AppRole, NavItem[]> = {
     { href: '/owner/purchases', label: 'Purchases', group: 'Operations' },
     { href: '/owner/expenses', label: 'Expenses', group: 'Operations' },
     { href: '/owner/inventory', label: 'Inventory', group: 'Operations' },
+    { href: '/owner/menu', label: 'Menu', group: 'Operations' },
     { href: '/owner/operations', label: 'Reconciliation', group: 'Control' },
     { href: '/owner/users', label: 'Users', group: 'Administration' },
     { href: '/owner/settings', label: 'Settings', group: 'Administration' },

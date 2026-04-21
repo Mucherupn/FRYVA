@@ -24,7 +24,7 @@ export default async function DailyReportPage({ searchParams }: { searchParams: 
     supabase.from('debts').select('id, remaining_amount, status').neq('status', 'paid'),
     supabase.from('opening_stock_entries').select('menu_item_id, qty, menu_items(name)').eq('entry_date', day),
     supabase.from('stock_production_entries').select('menu_item_id, qty, menu_items(name)').eq('entry_date', day),
-    supabase.from('sale_items').select('sale_id, menu_item_id, quantity, line_total, menu_items(name), sales!inner(sold_by, sold_at)').gte('sales.sold_at', fromTs).lte('sales.sold_at', toTs),
+    supabase.from('sale_items').select('sale_id, menu_item_id, menu_item_name, quantity, line_total, sales!inner(sold_by, sold_at)').gte('sales.sold_at', fromTs).lte('sales.sold_at', toTs),
     supabase.from('user_role_assignments').select('user_id').eq('role', 'waiter'),
   ]);
 
@@ -51,7 +51,7 @@ export default async function DailyReportPage({ searchParams }: { searchParams: 
 
   const productSummary = new Map<string, { qty: number; revenue: number }>();
   for (const row of saleItems) {
-    const key = row.menu_items?.name ?? `Item ${row.menu_item_id}`;
+    const key = row.menu_item_name ?? `Item ${row.menu_item_id}`;
     const current = productSummary.get(key) ?? { qty: 0, revenue: 0 };
     current.qty += Number(row.quantity);
     current.revenue += Number(row.line_total);

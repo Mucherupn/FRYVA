@@ -22,7 +22,7 @@ export function OpeningStockWorkflow({ items, defaultDate }: { items: Item[]; de
 
     startTransition(async () => {
       const result = await recordOpeningStockAction({ entry_date: entryDate, note: note || undefined, items: changed.map((row) => ({ menu_item_id: row.id, qty: row.qty })) });
-      if (!result.ok) return setError(result.error);
+      if (!result.ok) return setError(result.error ?? 'Request failed.');
       setSuccess('Opening stock saved. Same-day edits create revision history.');
     });
   };

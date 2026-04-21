@@ -51,7 +51,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
     supabase.from('purchases').select('id, total_cost, purchase_date').gte('purchase_date', range.from).lte('purchase_date', range.to),
     supabase.from('debt_payments').select('id, amount, received_at, debt_id').gte('received_at', fromTs).lte('received_at', toTs),
     supabase.from('debts').select('id, original_amount, remaining_amount, assigned_waiter_id, created_at, status, debtors(full_name)').order('created_at', { ascending: false }),
-    supabase.from('sale_items').select('sale_id, menu_item_id, quantity, line_total, sales!inner(sold_at, sold_by), menu_items(name)').gte('sales.sold_at', fromTs).lte('sales.sold_at', toTs),
+    supabase.from('sale_items').select('sale_id, menu_item_id, menu_item_name, quantity, line_total, sales!inner(sold_at, sold_by)').gte('sales.sold_at', fromTs).lte('sales.sold_at', toTs),
     supabase.from('user_role_assignments').select('user_id').eq('role', 'waiter'),
   ]);
 
@@ -122,7 +122,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
     const waiterId = row.sales.sold_by;
     const current = waiterStats.get(waiterId);
     if (!current) continue;
-    const name = row.menu_items?.name ?? `Item ${row.menu_item_id}`;
+    const name = row.menu_item_name ?? `Item ${row.menu_item_id}`;
     current.top.set(name, (current.top.get(name) ?? 0) + Number(row.quantity));
   }
 
@@ -157,7 +157,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   const itemStats = new Map<number, { name: string; qty: number; revenue: number; tx: Set<string> }>();
   for (const row of saleItems) {
     const key = row.menu_item_id;
-    const current = itemStats.get(key) ?? { name: row.menu_items?.name ?? `Item ${key}`, qty: 0, revenue: 0, tx: new Set<string>() };
+    const current = itemStats.get(key) ?? { name: row.menu_item_name ?? `Item ${key}`, qty: 0, revenue: 0, tx: new Set<string>() };
     current.qty += Number(row.quantity);
     current.revenue += Number(row.line_total);
     current.tx.add(row.sale_id);
