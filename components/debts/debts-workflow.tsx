@@ -51,7 +51,7 @@ export function DebtsWorkflow({ debts, ownerMode }: { debts: DebtRow[]; ownerMod
 
   return (
     <div className="list-stack">
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div className="filter-bar" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))' }}>
         {(['all', 'unpaid', 'partial', 'paid'] as const).map((value) => (
           <button key={value} type="button" onClick={() => setStatusFilter(value)} className={`btn ${statusFilter === value ? 'btn-primary' : 'btn-secondary'}`}>
             {value}
@@ -91,7 +91,7 @@ export function DebtsWorkflow({ debts, ownerMode }: { debts: DebtRow[]; ownerMod
           </div>
           {error ? <p className="alert alert-error" style={{ marginTop: 10 }}>{error}</p> : null}
           {success ? <p className="alert alert-success" style={{ marginTop: 10 }}>{success}</p> : null}
-          <button type="button" disabled={isPending} onClick={submitPayment} className="btn btn-primary" style={{ marginTop: 10 }}>
+          <button type="button" disabled={isPending} onClick={submitPayment} className="btn btn-primary" style={{ marginTop: 10, width: '100%' }}>
             {isPending ? 'Saving...' : 'Save payment'}
           </button>
         </section>

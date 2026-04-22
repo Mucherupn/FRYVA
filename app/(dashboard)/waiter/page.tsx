@@ -35,10 +35,14 @@ export default async function WaiterDashboardPage() {
         <MetricCard label="Mpesa" value={money(totals.mpesa)} />
         <MetricCard label="Debt" value={money(totals.debt)} />
       </section>
-      <section className="panel" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        <Link href="/waiter/pos" className="btn btn-primary">Open POS</Link>
-        <Link href="/waiter/debts" className="btn btn-secondary">Debt collections</Link>
-        <Link href="/waiter/history" className="btn btn-secondary">Sales history</Link>
+      <section className="panel">
+        <div className="form-grid">
+          <div className="form-col-4">
+        <Link href="/waiter/pos" className="btn btn-primary" style={{ width: "100%" }}>Open POS</Link>
+          </div>
+          <div className="form-col-4"><Link href="/waiter/debts" className="btn btn-secondary" style={{ width: "100%" }}>Debt collections</Link></div>
+          <div className="form-col-4"><Link href="/waiter/history" className="btn btn-secondary" style={{ width: "100%" }}>Sales history</Link></div>
+        </div>
       </section>
     </DashboardShell>
   );

@@ -99,7 +99,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
         <div className="rounded border p-3 text-sm"><p className="text-slate-500">Debts paid in period</p><p className="text-lg font-semibold">{paidInPeriod?.length ?? 0}</p></div>
       </div>
 
-      <form className="mb-4 grid gap-2 rounded border p-3 md:grid-cols-7">
+      <form className="filter-bar mb-4 md:grid-cols-7">
         <select name="period" defaultValue={range.key} className="rounded border px-2 py-1 text-sm">{REPORT_PERIOD_OPTIONS.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}</select>
         <select name="waiter" defaultValue={params.waiter ?? ''} className="rounded border px-2 py-1 text-sm">
           <option value="">All waiters</option>

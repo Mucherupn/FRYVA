@@ -69,7 +69,7 @@ export default async function DailyReportPage({ searchParams }: { searchParams: 
 
   return (
     <DashboardShell role="owner" title="Daily report" description="Operational end-of-day report for owner review.">
-      <form className="mb-4 flex items-center gap-2 rounded border p-3">
+      <form className="filter-bar mb-4">
         <input type="date" name="day" defaultValue={day} className="rounded border px-2 py-1 text-sm" />
         <button type="submit" className="rounded bg-black px-3 py-2 text-sm text-white">Load daily report</button>
       </form>
