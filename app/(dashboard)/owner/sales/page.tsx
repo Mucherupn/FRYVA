@@ -65,7 +65,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
 
   return (
     <DashboardShell role="owner" title="Owner sales" description="Review sales with server-side pagination, filtering, and printable detail.">
-      <form className="mb-4 grid gap-2 rounded border p-3 md:grid-cols-6">
+      <form className="filter-bar mb-4 md:grid-cols-6">
         <input name="date_from" defaultValue={params.date_from} type="date" className="rounded border px-2 py-1 text-sm" />
         <input name="date_to" defaultValue={params.date_to} type="date" className="rounded border px-2 py-1 text-sm" />
         <select name="waiter" defaultValue={params.waiter ?? ''} className="rounded border px-2 py-1 text-sm"><option value="">All waiters</option>{(waiters ?? []).map((w: any) => <option key={w.user_id} value={w.user_id}>{waiterNameMap.get(w.user_id) ?? w.user_id}</option>)}</select>

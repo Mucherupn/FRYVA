@@ -88,9 +88,9 @@ export function PosWorkflow({ menuItems }: PosWorkflowProps) {
         {menuItems.length === 0 ? (
           <EmptyState title="No active menu items" description="Activate menu items to start sales." />
         ) : (
-          <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
+          <div className="pos-menu-grid">
             {menuItems.map((item) => (
-              <button key={item.id} type="button" onClick={() => addItem(item)} className="row-card" style={{ textAlign: 'left', cursor: 'pointer' }}>
+              <button key={item.id} type="button" onClick={() => addItem(item)} className="row-card" style={{ textAlign: 'left', cursor: 'pointer', minHeight: 112 }}>
                 <p style={{ margin: 0, fontWeight: 650 }}>{item.name}</p>
                 <p className="section-subtitle" style={{ marginTop: 2 }}>{item.category_name}</p>
                 <p style={{ margin: '8px 0 0', fontWeight: 700 }}>{money(item.selling_price)}</p>
@@ -124,8 +124,8 @@ export function PosWorkflow({ menuItems }: PosWorkflowProps) {
           <p style={{ display: 'flex', justifyContent: 'space-between', margin: 0 }}><span>Subtotal</span><strong>{money(subtotal)}</strong></p>
         </div>
 
-        <div className="list-stack" style={{ marginTop: 12 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+        <div className="list-stack pos-cart-actions" style={{ marginTop: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
             {(['cash', 'mpesa', 'debt'] as const).map((method) => (
               <button key={method} type="button" onClick={() => setPaymentMethod(method)} className={`btn ${paymentMethod === method ? 'btn-primary' : 'btn-secondary'}`}>
                 {method}
@@ -144,7 +144,7 @@ export function PosWorkflow({ menuItems }: PosWorkflowProps) {
           <textarea value={saleNote} onChange={(e) => setSaleNote(e.target.value)} placeholder="Sale note" className="textarea" />
           {error ? <p className="alert alert-error">{error}</p> : null}
           {feedback ? <p className="alert alert-success">{feedback}</p> : null}
-          <button type="button" onClick={checkout} disabled={isPending} className="btn btn-primary" style={{ width: '100%' }}>
+          <button type="button" onClick={checkout} disabled={isPending} className="btn btn-primary" style={{ width: '100%', minHeight: 48 }}>
             {isPending ? 'Finalizing sale...' : 'Finalize sale'}
           </button>
         </div>

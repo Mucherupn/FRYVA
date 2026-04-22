@@ -37,7 +37,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   return (
     <DashboardShell role="owner" title="Owner expenses" description="Capture business expenses and monitor chef vs owner spending.">
       <OwnerExpensesWorkflow defaultDate={today} />
-      <form className="mt-6 grid gap-2 rounded border p-3 md:grid-cols-5">
+      <form className="filter-bar mt-6 md:grid-cols-5">
         <input name="date_from" defaultValue={params.date_from} type="date" className="rounded border px-2 py-1 text-sm" />
         <input name="date_to" defaultValue={params.date_to} type="date" className="rounded border px-2 py-1 text-sm" />
         <select name="category" defaultValue={params.category ?? ''} className="rounded border px-2 py-1 text-sm"><option value="">All categories</option>{uniqueCategories.map((category) => <option key={category} value={category ?? ''}>{category}</option>)}</select>

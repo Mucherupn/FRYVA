@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { AppRole } from '@/lib/auth/roles';
 
 type NavItem = { href: string; label: string; group: string };
@@ -60,11 +60,20 @@ export function DashboardShell({
   children: ReactNode;
 }) {
   const pathname = usePathname();
-  const nav = ROLE_NAV[role];
-  const grouped = new Map<string, NavItem[]>();
-  for (const item of nav) {
-    grouped.set(item.group, [...(grouped.get(item.group) ?? []), item]);
-  }
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  const grouped = useMemo(() => {
+    const nav = ROLE_NAV[role];
+    const byGroup = new Map<string, NavItem[]>();
+    for (const item of nav) {
+      byGroup.set(item.group, [...(byGroup.get(item.group) ?? []), item]);
+    }
+    return byGroup;
+  }, [role]);
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
 
   return (
     <div className="app-shell">
@@ -75,16 +84,20 @@ export function DashboardShell({
             <h1 className="page-title">{title}</h1>
             <p className="page-description">{description}</p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="app-header-actions">
             <span className="status-chip status-info">{roleLabel[role]}</span>
+            <button type="button" className="btn btn-secondary mobile-nav-toggle" onClick={() => setMobileNavOpen((prev) => !prev)} aria-expanded={mobileNavOpen}>
+              {mobileNavOpen ? 'Close menu' : 'Menu'}
+            </button>
             <form action="/auth/logout" method="post">
               <button className="btn btn-secondary">Sign out</button>
             </form>
           </div>
         </div>
       </header>
+      {mobileNavOpen ? <button aria-label="Close navigation" className="sidebar-overlay" onClick={() => setMobileNavOpen(false)} /> : null}
       <div className="app-grid">
-        <aside className="sidebar" aria-label="Role navigation">
+        <aside className={`sidebar ${mobileNavOpen ? 'open' : ''}`} aria-label="Role navigation">
           <p className="sidebar-group-title">{role} navigation</p>
           {Array.from(grouped.entries()).map(([group, items]) => (
             <div key={group}>
