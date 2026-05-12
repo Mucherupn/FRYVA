@@ -2,11 +2,12 @@ import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { OpeningStockWorkflow } from '@/components/chef/opening-stock-workflow';
 import { requireRole } from '@/lib/auth/guards';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { formatKenyaDateTime, kenyaTodayDate } from '@/lib/time/kenya';
 
 export default async function Page() {
   await requireRole(['chef', 'owner']);
   const supabase = await createServerSupabaseClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = kenyaTodayDate();
 
   const { data: menuItems } = await supabase
     .from('menu_items')
@@ -33,7 +34,7 @@ export default async function Page() {
         {(recent ?? []).map((entry: any) => (
           <article key={entry.id} className="rounded border p-2 text-sm">
             <p className="font-medium">{entry.menu_items?.name ?? 'Item'} · {entry.qty}</p>
-            <p className="text-xs text-slate-500">{entry.entry_date} · entered by {entry.profiles?.full_name ?? entry.entered_by} · updated {new Date(entry.updated_at ?? entry.created_at).toLocaleString()}</p>
+            <p className="text-xs text-slate-500">{entry.entry_date} · entered by {entry.profiles?.full_name ?? entry.entered_by} · updated {formatKenyaDateTime(entry.updated_at ?? entry.created_at)}</p>
           </article>
         ))}
       </section>

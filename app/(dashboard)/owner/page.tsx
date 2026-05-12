@@ -3,6 +3,7 @@ import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { MetricCard, EmptyState } from '@/components/ui/fryva-ui';
 import { requireRole } from '@/lib/auth/guards';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { kenyaDayUtcRange, kenyaTodayDate } from '@/lib/time/kenya';
 
 function money(value: number) {
   return new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(value);
@@ -11,18 +12,19 @@ function money(value: number) {
 export default async function OwnerDashboardPage() {
   await requireRole(['owner']);
   const supabase = await createServerSupabaseClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = kenyaTodayDate();
+  const todayRange = kenyaDayUtcRange(today);
 
   const [ledgerResult, debtResult, salesResult, expensesResult, purchasesResult, openingResult, productionResult, trackedItemsResult, soldResult, purchasedTodayResult] = await Promise.all([
     supabase.from('ledger_entries').select('amount, direction, ledger_accounts(account_type)'),
     supabase.from('debts').select('remaining_amount').neq('status', 'paid'),
-    supabase.from('sales').select('total').gte('sold_at', `${today}T00:00:00`).lte('sold_at', `${today}T23:59:59`),
-    supabase.from('expenses').select('amount').gte('expense_time', `${today}T00:00:00`).lte('expense_time', `${today}T23:59:59`),
+    supabase.from('sales').select('total').gte('sold_at', todayRange.from).lt('sold_at', todayRange.to),
+    supabase.from('expenses').select('amount').gte('expense_time', todayRange.from).lt('expense_time', todayRange.to),
     supabase.from('purchases').select('total_cost').eq('purchase_date', today),
     supabase.from('opening_stock_entries').select('menu_item_id, qty, menu_items(name)').eq('entry_date', today),
     supabase.from('stock_production_entries').select('menu_item_id, qty').eq('entry_date', today),
     supabase.from('menu_items').select('id, name').eq('active', true).eq('stock_tracked', true),
-    supabase.from('sale_items').select('menu_item_id, quantity, sales!inner(sold_at)').gte('sales.sold_at', `${today}T00:00:00`).lte('sales.sold_at', `${today}T23:59:59`),
+    supabase.from('sale_items').select('menu_item_id, quantity, sales!inner(sold_at, status)').gte('sales.sold_at', todayRange.from).lt('sales.sold_at', todayRange.to).eq('sales.status', 'finalized'),
     supabase.from('purchases').select('item_name, menu_item_id, qty').eq('purchase_date', today),
   ]);
 

@@ -2,6 +2,7 @@ import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { PurchasesWorkflow } from '@/components/owner/purchases-workflow';
 import { requireRole } from '@/lib/auth/guards';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { kenyaTodayDate } from '@/lib/time/kenya';
 
 type Search = { date_from?: string; date_to?: string; category?: string; page?: string };
 
@@ -17,7 +18,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   const pageSize = 25;
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = kenyaTodayDate();
 
   let query = supabase.from('purchases').select('id, purchase_date, item_name, menu_item_id, category, qty, unit, total_cost, payment_method, supplier, note', { count: 'exact' }).order('purchase_date', { ascending: false }).range(from, to);
   if (params.date_from) query = query.gte('purchase_date', params.date_from);

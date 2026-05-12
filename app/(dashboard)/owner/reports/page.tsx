@@ -3,6 +3,7 @@ import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { requireRole } from '@/lib/auth/guards';
 import { REPORT_PERIOD_OPTIONS, resolveReportRange } from '@/lib/reports/period';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { kenyaDateFromTimestamp, kenyaDateRangeUtc } from '@/lib/time/kenya';
 
 type Search = {
   period?: string;
@@ -41,17 +42,16 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   await requireRole(['owner']);
   const params = await searchParams;
   const range = resolveReportRange(params);
-  const fromTs = `${range.from}T00:00:00`;
-  const toTs = `${range.to}T23:59:59`;
+  const timestampRange = kenyaDateRangeUtc(range.from, range.to);
   const supabase = await createServerSupabaseClient();
 
   const [salesRes, expensesRes, purchasesRes, debtPaymentsRes, debtsRes, saleItemsRes, waitersRes] = await Promise.all([
-    supabase.from('sales').select('id, total, payment_method, sold_by, sold_at').gte('sold_at', fromTs).lte('sold_at', toTs).eq('status', 'finalized'),
-    supabase.from('expenses').select('id, amount, expense_time').gte('expense_time', fromTs).lte('expense_time', toTs),
+    supabase.from('sales').select('id, total, payment_method, sold_by, sold_at').gte('sold_at', timestampRange.from).lt('sold_at', timestampRange.to).eq('status', 'finalized'),
+    supabase.from('expenses').select('id, amount, expense_time').gte('expense_time', timestampRange.from).lt('expense_time', timestampRange.to),
     supabase.from('purchases').select('id, total_cost, purchase_date').gte('purchase_date', range.from).lte('purchase_date', range.to),
-    supabase.from('debt_payments').select('id, amount, received_at, debt_id').gte('received_at', fromTs).lte('received_at', toTs),
+    supabase.from('debt_payments').select('id, amount, received_at, debt_id').gte('received_at', timestampRange.from).lt('received_at', timestampRange.to),
     supabase.from('debts').select('id, original_amount, remaining_amount, assigned_waiter_id, created_at, status, debtors(full_name)').order('created_at', { ascending: false }),
-    supabase.from('sale_items').select('sale_id, menu_item_id, menu_item_name, quantity, line_total, sales!inner(sold_at, sold_by)').gte('sales.sold_at', fromTs).lte('sales.sold_at', toTs),
+    supabase.from('sale_items').select('sale_id, menu_item_id, menu_item_name, quantity, line_total, sales!inner(sold_at, sold_by, status)').gte('sales.sold_at', timestampRange.from).lt('sales.sold_at', timestampRange.to).eq('sales.status', 'finalized'),
     supabase.from('user_role_assignments').select('user_id').eq('role', 'waiter'),
   ]);
 
@@ -88,14 +88,14 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   const paymentMixByDay = new Map<string, { cash: number; mpesa: number; debt: number }>();
 
   for (const sale of sales as any[]) {
-    const day = String(sale.sold_at).slice(0, 10);
+    const day = kenyaDateFromTimestamp(sale.sold_at);
     revenueByDay.set(day, (revenueByDay.get(day) ?? 0) + Number(sale.total));
     const existing = paymentMixByDay.get(day) ?? { cash: 0, mpesa: 0, debt: 0 };
     existing[sale.payment_method as 'cash' | 'mpesa' | 'debt'] += Number(sale.total);
     paymentMixByDay.set(day, existing);
   }
   for (const expense of expenses as any[]) {
-    const day = String(expense.expense_time).slice(0, 10);
+    const day = kenyaDateFromTimestamp(expense.expense_time);
     expenseByDay.set(day, (expenseByDay.get(day) ?? 0) + Number(expense.amount));
   }
 

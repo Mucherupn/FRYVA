@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { requireRole } from '@/lib/auth/guards';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { formatKenyaDateTime, kenyaDayUtcRange } from '@/lib/time/kenya';
 
 type Search = {
   date_from?: string;
@@ -40,8 +41,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   if (params.waiter) salesQuery = salesQuery.eq('sold_by', params.waiter);
   if (params.payment_method) salesQuery = salesQuery.eq('payment_method', params.payment_method);
   if (params.status) salesQuery = salesQuery.eq('status', params.status);
-  if (params.date_from) salesQuery = salesQuery.gte('sold_at', `${params.date_from}T00:00:00`);
-  if (params.date_to) salesQuery = salesQuery.lte('sold_at', `${params.date_to}T23:59:59`);
+  if (params.date_from) salesQuery = salesQuery.gte('sold_at', kenyaDayUtcRange(params.date_from).from);
+  if (params.date_to) salesQuery = salesQuery.lt('sold_at', kenyaDayUtcRange(params.date_to).to);
 
   const { data: sales, count } = await salesQuery;
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / pageSize));
@@ -86,7 +87,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
         {(sales ?? []).length === 0 ? <p className="rounded border border-dashed p-4 text-sm text-slate-500">No sales found for selected filters.</p> : (sales ?? []).map((sale: any) => (
           <Link key={sale.id} href={`/owner/sales?${new URLSearchParams({ ...Object.fromEntries(q.entries()), sale_id: sale.id, page: String(page) }).toString()}`} className="block rounded border p-3 text-sm hover:border-black">
             <p className="font-semibold">{sale.sale_number} · {money(Number(sale.total))}</p>
-            <p className="text-xs text-slate-500">{new Date(sale.sold_at).toLocaleString()} · {sale.payment_method} · {sale.status} · {waiterNameMap.get(sale.sold_by) ?? 'Unknown waiter'}</p>
+            <p className="text-xs text-slate-500">{formatKenyaDateTime(sale.sold_at)} · {sale.payment_method} · {sale.status} · {waiterNameMap.get(sale.sold_by) ?? 'Unknown waiter'}</p>
           </Link>
         ))}
       </div>
@@ -97,7 +98,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
             <h2 className="text-base font-semibold">Sale detail: {selectedSale.sale_number}</h2>
             <span className="text-xs text-slate-500">Use browser print on this page for a clean receipt-style detail.</span>
           </div>
-          <p className="text-sm text-slate-600">{new Date(selectedSale.sold_at).toLocaleString()} · {selectedSale.payment_method} · {selectedSale.status} · Waiter: {waiterNameMap.get(selectedSale.sold_by) ?? 'Unknown'}</p>
+          <p className="text-sm text-slate-600">{formatKenyaDateTime(selectedSale.sold_at)} · {selectedSale.payment_method} · {selectedSale.status} · Waiter: {waiterNameMap.get(selectedSale.sold_by) ?? 'Unknown'}</p>
           {selectedSale.note ? <p className="text-sm">Note: {selectedSale.note}</p> : null}
           <div className="space-y-1 text-sm">{saleItems.map((item: any) => <p key={item.id} className="flex justify-between rounded border px-2 py-1"><span>{item.menu_item_name ?? 'Item'} × {item.quantity}</span><span>{money(Number(item.line_total))}</span></p>)}</div>
           <p className="text-sm font-semibold">Total: {money(Number(selectedSale.total))}</p>

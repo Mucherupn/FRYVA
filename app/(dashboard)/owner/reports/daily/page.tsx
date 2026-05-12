@@ -1,6 +1,7 @@
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { requireRole } from '@/lib/auth/guards';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { kenyaDayUtcRange, kenyaTodayDate } from '@/lib/time/kenya';
 
 type Search = { day?: string };
 
@@ -11,20 +12,19 @@ function money(value: number) {
 export default async function DailyReportPage({ searchParams }: { searchParams: Promise<Search> }) {
   await requireRole(['owner']);
   const params = await searchParams;
-  const day = params.day ?? new Date().toISOString().slice(0, 10);
-  const fromTs = `${day}T00:00:00`;
-  const toTs = `${day}T23:59:59`;
+  const day = params.day ?? kenyaTodayDate();
+  const dayRange = kenyaDayUtcRange(day);
   const supabase = await createServerSupabaseClient();
 
   const [salesRes, expensesRes, purchasesRes, debtPaymentsRes, debtsRes, openingRes, productionRes, saleItemsRes, waitersRes] = await Promise.all([
-    supabase.from('sales').select('id, total, payment_method, sold_by, sold_at').gte('sold_at', fromTs).lte('sold_at', toTs).eq('status', 'finalized'),
-    supabase.from('expenses').select('id, amount').gte('expense_time', fromTs).lte('expense_time', toTs),
+    supabase.from('sales').select('id, total, payment_method, sold_by, sold_at').gte('sold_at', dayRange.from).lt('sold_at', dayRange.to).eq('status', 'finalized'),
+    supabase.from('expenses').select('id, amount').gte('expense_time', dayRange.from).lt('expense_time', dayRange.to),
     supabase.from('purchases').select('id, total_cost, item_name, qty, unit').eq('purchase_date', day),
-    supabase.from('debt_payments').select('id, amount').gte('received_at', fromTs).lte('received_at', toTs),
+    supabase.from('debt_payments').select('id, amount').gte('received_at', dayRange.from).lt('received_at', dayRange.to),
     supabase.from('debts').select('id, remaining_amount, status').neq('status', 'paid'),
     supabase.from('opening_stock_entries').select('menu_item_id, qty, menu_items(name)').eq('entry_date', day),
     supabase.from('stock_production_entries').select('menu_item_id, qty, menu_items(name)').eq('entry_date', day),
-    supabase.from('sale_items').select('sale_id, menu_item_id, menu_item_name, quantity, line_total, sales!inner(sold_by, sold_at)').gte('sales.sold_at', fromTs).lte('sales.sold_at', toTs),
+    supabase.from('sale_items').select('sale_id, menu_item_id, menu_item_name, quantity, line_total, sales!inner(sold_by, sold_at, status)').gte('sales.sold_at', dayRange.from).lt('sales.sold_at', dayRange.to).eq('sales.status', 'finalized'),
     supabase.from('user_role_assignments').select('user_id').eq('role', 'waiter'),
   ]);
 

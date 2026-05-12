@@ -2,6 +2,7 @@ import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { OwnerExpensesWorkflow } from '@/components/owner/owner-expenses-workflow';
 import { requireRole } from '@/lib/auth/guards';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { formatKenyaDateTime, kenyaDayUtcRange, kenyaTodayDate } from '@/lib/time/kenya';
 
 type Search = { date_from?: string; date_to?: string; category?: string; source?: string; page?: string };
 
@@ -17,11 +18,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   const pageSize = 25;
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = kenyaTodayDate();
 
   let query = supabase.from('expenses').select('id, expense_time, description, category, amount, payment_method, source, note', { count: 'exact' }).order('expense_time', { ascending: false }).range(from, to);
-  if (params.date_from) query = query.gte('expense_time', `${params.date_from}T00:00:00`);
-  if (params.date_to) query = query.lte('expense_time', `${params.date_to}T23:59:59`);
+  if (params.date_from) query = query.gte('expense_time', kenyaDayUtcRange(params.date_from).from);
+  if (params.date_to) query = query.lt('expense_time', kenyaDayUtcRange(params.date_to).to);
   if (params.category) query = query.eq('category', params.category);
   if (params.source) query = query.eq('source', params.source);
 
@@ -49,7 +50,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
         {(expenses ?? []).map((expense) => (
           <article key={expense.id} className="rounded border p-3 text-sm">
             <p className="font-semibold">{expense.description} · {money(Number(expense.amount))}</p>
-            <p className="text-xs text-slate-500">{new Date(expense.expense_time).toLocaleString()} · {expense.payment_method} · source: {expense.source}{expense.category ? ` · ${expense.category}` : ''}</p>
+            <p className="text-xs text-slate-500">{formatKenyaDateTime(expense.expense_time)} · {expense.payment_method} · source: {expense.source}{expense.category ? ` · ${expense.category}` : ''}</p>
           </article>
         ))}
       </section>

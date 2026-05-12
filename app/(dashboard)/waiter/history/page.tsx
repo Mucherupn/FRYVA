@@ -1,6 +1,7 @@
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { requireRole } from '@/lib/auth/guards';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { formatKenyaDateTime } from '@/lib/time/kenya';
 
 function money(value: number) {
   return new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(value);
@@ -49,7 +50,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ p
             <article key={sale.id} className="rounded border p-3 text-sm">
               <p className="font-semibold">{sale.sale_number} · {money(Number(sale.total))}</p>
               <p className="text-xs text-slate-500">
-                {new Date(sale.sold_at).toLocaleString()} · {sale.payment_method} · {waiterNameMap.get(sale.sold_by) ?? 'Unknown waiter'}
+                {formatKenyaDateTime(sale.sold_at)} · {sale.payment_method} · {waiterNameMap.get(sale.sold_by) ?? 'Unknown waiter'}
               </p>
               {sale.note ? <p className="mt-1 text-xs">Note: {sale.note}</p> : null}
             </article>
