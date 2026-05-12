@@ -2,30 +2,21 @@ import Link from 'next/link';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { requireRole } from '@/lib/auth/guards';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { kenyaDayUtcRange, kenyaTodayDate } from '@/lib/time/kenya';
+
+type ChefSoldItemRow = {
+  item_name: string;
+  quantity_sold: number | string;
+};
 
 export default async function ChefDashboardPage() {
   await requireRole(['chef', 'owner']);
   const supabase = await createServerSupabaseClient();
-  const todayRange = kenyaDayUtcRange(kenyaTodayDate());
+  const { data: soldRowsData } = await supabase.rpc('get_chef_sales_of_day');
 
-  const { data: saleItems } = await supabase
-    .from('sale_items')
-    .select('menu_item_id, menu_item_name, quantity, sales!inner(sold_at, status)')
-    .gte('sales.sold_at', todayRange.from)
-    .lt('sales.sold_at', todayRange.to)
-    .eq('sales.status', 'finalized');
-
-  const soldByItem = new Map<string, number>();
-  for (const item of saleItems ?? []) {
-    const name = item.menu_item_name ?? `Item ${(item as any).menu_item_id}`;
-    soldByItem.set(name, (soldByItem.get(name) ?? 0) + Number(item.quantity));
-  }
-
-  const soldRows = Array.from(soldByItem.entries())
-    .map(([name, quantity]) => ({ name, quantity }))
-    .filter((row) => row.quantity > 0)
-    .sort((a, b) => b.quantity - a.quantity || a.name.localeCompare(b.name));
+  const soldRows = ((soldRowsData ?? []) as ChefSoldItemRow[]).map((row) => ({
+    name: row.item_name,
+    quantity: Number(row.quantity_sold),
+  }));
 
   return (
     <DashboardShell role="chef" title="Chef dashboard" description="Practical kitchen controls for stock, production, and expense capture.">
