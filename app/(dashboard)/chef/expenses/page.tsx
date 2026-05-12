@@ -2,6 +2,7 @@ import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { ChefExpensesWorkflow } from '@/components/chef/chef-expenses-workflow';
 import { requireRole } from '@/lib/auth/guards';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { formatKenyaDateTime, kenyaTodayDate } from '@/lib/time/kenya';
 
 function money(value: number) {
   return new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(value);
@@ -10,7 +11,7 @@ function money(value: number) {
 export default async function Page() {
   await requireRole(['chef', 'owner']);
   const supabase = await createServerSupabaseClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = kenyaTodayDate();
 
   const { data: expenses } = await supabase
     .from('expenses')
@@ -27,7 +28,7 @@ export default async function Page() {
         {(expenses ?? []).map((entry) => (
           <article key={entry.id} className="rounded border p-2 text-sm">
             <p className="font-medium">{entry.description} · {money(Number(entry.amount))}</p>
-            <p className="text-xs text-slate-500">{new Date(entry.expense_time).toLocaleString()} · {entry.payment_method}{entry.category ? ` · ${entry.category}` : ''}{entry.note ? ` · ${entry.note}` : ''}</p>
+            <p className="text-xs text-slate-500">{formatKenyaDateTime(entry.expense_time)} · {entry.payment_method}{entry.category ? ` · ${entry.category}` : ''}{entry.note ? ` · ${entry.note}` : ''}</p>
           </article>
         ))}
       </section>

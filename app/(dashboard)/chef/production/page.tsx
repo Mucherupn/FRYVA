@@ -2,11 +2,12 @@ import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { ProductionWorkflow } from '@/components/chef/production-workflow';
 import { requireRole } from '@/lib/auth/guards';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { formatKenyaDateTime, kenyaTodayDate } from '@/lib/time/kenya';
 
 export default async function Page() {
   await requireRole(['chef', 'owner']);
   const supabase = await createServerSupabaseClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = kenyaTodayDate();
 
   const { data: menuItems } = await supabase
     .from('menu_items')
@@ -31,7 +32,7 @@ export default async function Page() {
         {(entries ?? []).map((entry: any) => (
           <article key={entry.id} className="rounded border p-2 text-sm">
             <p className="font-medium">{entry.menu_items?.name ?? 'Item'} · {entry.qty}</p>
-            <p className="text-xs text-slate-500">{new Date(entry.produced_at).toLocaleString()} · by {entry.profiles?.full_name ?? 'Unknown'}{entry.note ? ` · ${entry.note}` : ''}</p>
+            <p className="text-xs text-slate-500">{formatKenyaDateTime(entry.produced_at)} · by {entry.profiles?.full_name ?? 'Unknown'}{entry.note ? ` · ${entry.note}` : ''}</p>
           </article>
         ))}
       </section>

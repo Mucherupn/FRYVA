@@ -2,6 +2,7 @@ import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { OperationsWorkflow } from '@/components/owner/operations-workflow';
 import { requireRole } from '@/lib/auth/guards';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { formatKenyaDateTime, formatKenyaDisplayDate, kenyaTodayDate } from '@/lib/time/kenya';
 
 function money(value: number) {
   return new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(value || 0);
@@ -10,7 +11,7 @@ function money(value: number) {
 export default async function Page() {
   await requireRole(['owner']);
   const supabase = await createServerSupabaseClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = kenyaTodayDate();
 
   const [{ data: balances }, { data: recon }, { data: closures }, { data: debtAging }, { data: recentPaid }] = await Promise.all([
     supabase.from('v_ledger_balance_by_method').select('account_type, balance'),
@@ -59,7 +60,7 @@ export default async function Page() {
           <h2 className="mb-2 text-sm font-semibold">Debts recently paid</h2>
           <div className="space-y-1 text-xs">
             {(recentPaid ?? []).map((row: any) => (
-              <p key={row.id}>{String(row.received_at).slice(0, 10)} · {money(Number(row.amount))} · {row.payment_method}</p>
+              <p key={row.id}>{formatKenyaDisplayDate(row.received_at)} · {money(Number(row.amount))} · {row.payment_method}</p>
             ))}
           </div>
         </article>
@@ -69,7 +70,7 @@ export default async function Page() {
         <h2 className="mb-2 text-sm font-semibold">End-of-day closures</h2>
         <div className="space-y-1 text-xs">
           {(closures ?? []).length === 0 ? <p className="text-slate-500">No day closures yet.</p> : (closures ?? []).map((row: any) => (
-            <p key={row.id}>{row.close_date} · closed {new Date(row.closed_at).toLocaleString()} · net {money(Number(row.summary_snapshot?.net_position ?? 0))}{row.reconciliation_note ? ` · ${row.reconciliation_note}` : ''}</p>
+            <p key={row.id}>{row.close_date} · closed {formatKenyaDateTime(row.closed_at)} · net {money(Number(row.summary_snapshot?.net_position ?? 0))}{row.reconciliation_note ? ` · ${row.reconciliation_note}` : ''}</p>
           ))}
         </div>
       </section>

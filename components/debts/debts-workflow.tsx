@@ -1,5 +1,6 @@
 'use client';
 
+import { formatKenyaDisplayDate } from '@/lib/time/kenya';
 import { useMemo, useState, useTransition } from 'react';
 import { recordDebtPaymentAction } from '@/app/(dashboard)/waiter/debts/actions';
 import { EmptyState, StatusChip } from '@/components/ui/fryva-ui';
@@ -71,7 +72,7 @@ export function DebtsWorkflow({ debts, ownerMode }: { debts: DebtRow[]; ownerMod
               </div>
               <p style={{ margin: '6px 0 0', fontWeight: 700 }}>{money(debt.remaining_amount)} remaining</p>
               <p className="section-subtitle" style={{ marginTop: 6 }}>
-                Original {money(debt.original_amount)} · {new Date(debt.created_at).toLocaleDateString()} {ownerMode ? `· ${debt.assigned_waiter_name}` : ''}
+                Original {money(debt.original_amount)} · {formatKenyaDisplayDate(debt.created_at)} {ownerMode ? `· ${debt.assigned_waiter_name}` : ''}
               </p>
             </button>
           ))}

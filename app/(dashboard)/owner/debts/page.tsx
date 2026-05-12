@@ -3,6 +3,7 @@ import { requireRole } from '@/lib/auth/guards';
 import { resolveReportRange, REPORT_PERIOD_OPTIONS } from '@/lib/reports/period';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { classifyDebtAging } from '@/lib/debts/aging';
+import { formatKenyaDisplayDate, kenyaDateRangeUtc } from '@/lib/time/kenya';
 
 type Search = {
   waiter?: string;
@@ -44,7 +45,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
 
   if (params.waiter) debtsQuery = debtsQuery.eq('assigned_waiter_id', params.waiter);
   if (params.status) debtsQuery = debtsQuery.eq('status', params.status);
-  debtsQuery = debtsQuery.gte('created_at', `${range.from}T00:00:00`).lte('created_at', `${range.to}T23:59:59`);
+  const timestampRange = kenyaDateRangeUtc(range.from, range.to);
+  debtsQuery = debtsQuery.gte('created_at', timestampRange.from).lt('created_at', timestampRange.to);
 
   const { data: debts, count } = await debtsQuery;
   const filteredDebts = (debts ?? []) as any[];
@@ -62,12 +64,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   const selectedDebt = params.debt_id ? filteredDebts.find((d) => d.id === params.debt_id) : null;
   const selectedDebtPayments = selectedDebt ? (payments ?? []).filter((p: any) => p.debt_id === selectedDebt.id) : [];
 
-  const fromTs = `${range.from}T00:00:00`;
-  const toTs = `${range.to}T23:59:59`;
+
   const [{ data: outstanding }, { data: createdInPeriod }, { data: paidInPeriod }] = await Promise.all([
     supabase.from('debts').select('remaining_amount').neq('status', 'paid'),
-    supabase.from('debts').select('id').gte('created_at', fromTs).lte('created_at', toTs),
-    supabase.from('debt_payments').select('id').gte('received_at', fromTs).lte('received_at', toTs),
+    supabase.from('debts').select('id').gte('created_at', timestampRange.from).lt('created_at', timestampRange.to),
+    supabase.from('debt_payments').select('id').gte('received_at', timestampRange.from).lt('received_at', timestampRange.to),
   ]);
 
   const outstandingTotal = (outstanding ?? []).reduce((sum, row: any) => sum + Number(row.remaining_amount), 0);
@@ -151,7 +152,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
         {filteredDebts.length === 0 ? <p className="rounded border border-dashed p-4 text-sm text-slate-500">No debts found.</p> : filteredDebts.map((debt: any) => (
           <article key={debt.id} className="rounded border p-3 text-sm">
             <p className="font-semibold"><a className="underline" href={`?period=${range.key}&date_from=${range.from}&date_to=${range.to}&debt_id=${debt.id}`}>{debt.debtors?.full_name ?? 'Unknown debtor'}</a> · {money(Number(debt.remaining_amount))} remaining</p>
-            <p className="text-xs text-slate-500">Original: {money(Number(debt.original_amount))} · Status: {debt.status} · Waiter: {waiterNameMap.get(debt.assigned_waiter_id) ?? 'Unknown'} · Sale date: {String(debt.created_at).slice(0, 10)}</p>
+            <p className="text-xs text-slate-500">Original: {money(Number(debt.original_amount))} · Status: {debt.status} · Waiter: {waiterNameMap.get(debt.assigned_waiter_id) ?? 'Unknown'} · Sale date: {formatKenyaDisplayDate(debt.created_at)}</p>
             {debt.debtors?.notes ? <p className="text-xs text-slate-500">Notes: {debt.debtors.notes}</p> : null}
           </article>
         ))}
@@ -165,10 +166,10 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
           <p>Current balance: {money(Number(selectedDebt.remaining_amount))}</p>
           <p>Status: {selectedDebt.status}</p>
           <p>Assigned waiter: {waiterNameMap.get(selectedDebt.assigned_waiter_id) ?? selectedDebt.assigned_waiter_id}</p>
-          <p>Sale date: {String(selectedDebt.created_at).slice(0, 10)}</p>
+          <p>Sale date: {formatKenyaDisplayDate(selectedDebt.created_at)}</p>
           <h3 className="mt-3 font-semibold">Payment timeline</h3>
           {selectedDebtPayments.length === 0 ? <p className="text-xs text-slate-500">No payments yet.</p> : selectedDebtPayments.map((payment: any) => (
-            <p key={payment.id} className="text-xs">{String(payment.received_at).slice(0, 10)} · {money(Number(payment.amount))} · {payment.payment_method}{payment.note ? ` · ${payment.note}` : ''}</p>
+            <p key={payment.id} className="text-xs">{formatKenyaDisplayDate(payment.received_at)} · {money(Number(payment.amount))} · {payment.payment_method}{payment.note ? ` · ${payment.note}` : ''}</p>
           ))}
         </section>
       ) : null}

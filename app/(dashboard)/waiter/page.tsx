@@ -3,6 +3,7 @@ import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { MetricCard } from '@/components/ui/fryva-ui';
 import { requireRole } from '@/lib/auth/guards';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { kenyaDayUtcRange, kenyaTodayDate } from '@/lib/time/kenya';
 
 function money(value: number) {
   return new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(value);
@@ -11,9 +12,10 @@ function money(value: number) {
 export default async function WaiterDashboardPage() {
   const auth = await requireRole(['waiter', 'owner']);
   const supabase = await createServerSupabaseClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = kenyaTodayDate();
+  const todayRange = kenyaDayUtcRange(today);
 
-  let todaySalesQuery = supabase.from('sales').select('total, payment_method').gte('sold_at', `${today}T00:00:00`).lte('sold_at', `${today}T23:59:59`);
+  let todaySalesQuery = supabase.from('sales').select('total, payment_method').gte('sold_at', todayRange.from).lt('sold_at', todayRange.to);
   if (auth.activeRole === 'waiter') todaySalesQuery = todaySalesQuery.eq('sold_by', auth.userId);
 
   const { data: todaySales } = await todaySalesQuery;
