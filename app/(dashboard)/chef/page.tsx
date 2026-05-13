@@ -3,6 +3,9 @@ import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { requireRole } from '@/lib/auth/guards';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 type ChefSoldItemRow = {
   item_name: string;
   quantity_sold: number | string;
@@ -11,7 +14,11 @@ type ChefSoldItemRow = {
 export default async function ChefDashboardPage() {
   await requireRole(['chef', 'owner']);
   const supabase = await createServerSupabaseClient();
-  const { data: soldRowsData } = await supabase.rpc('get_chef_sales_of_day');
+  const { data: soldRowsData, error: soldRowsError } = await supabase.rpc('get_chef_sales_of_day');
+
+  if (soldRowsError) {
+    console.error('Chef sales of day RPC failed', soldRowsError.message);
+  }
 
   const soldRows = ((soldRowsData ?? []) as ChefSoldItemRow[]).map((row) => ({
     name: row.item_name,
