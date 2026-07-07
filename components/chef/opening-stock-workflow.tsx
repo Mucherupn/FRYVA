@@ -3,12 +3,12 @@
 import { useMemo, useState, useTransition } from 'react';
 import { recordOpeningStockAction } from '@/app/(dashboard)/chef/opening-stock/actions';
 
-type Item = { id: number; name: string; category_name: string };
+type Item = { id: number; name: string; category_name: string; default_qty?: number };
 
 export function OpeningStockWorkflow({ items, defaultDate }: { items: Item[]; defaultDate: string }) {
   const [entryDate, setEntryDate] = useState(defaultDate);
   const [note, setNote] = useState('');
-  const [values, setValues] = useState<Record<number, string>>({});
+  const [values, setValues] = useState<Record<number, string>>(() => Object.fromEntries(items.map((item) => [item.id, item.default_qty === undefined ? '' : String(item.default_qty)])));
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -29,7 +29,7 @@ export function OpeningStockWorkflow({ items, defaultDate }: { items: Item[]; de
 
   return (
     <section className="panel">
-      <h2 className="section-title">Bulk opening stock entry</h2>
+      <h2 className="section-title">Bulk opening stock entry</h2><p className="section-subtitle">If no explicit opening stock exists, fields can be prefilled from yesterday’s closing stock.</p>
       <div className="form-grid">
         <div className="form-col-4"><input type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} className="input" /></div>
         <div className="form-col-8"><input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Batch note" className="input" /></div>

@@ -1,0 +1,4 @@
+'use client';
+import { useState, useTransition } from 'react';
+import { reviewStockVarianceAction } from '@/app/(dashboard)/owner/stock-alerts/actions';
+export function StockAlertsReviewForm({ date, itemId }: { date: string; itemId: number }) { const [note,setNote]=useState(''); const [msg,setMsg]=useState<string|null>(null); const [pending,start]=useTransition(); return <div style={{ display:'flex', gap:8, marginTop:8 }}><input value={note} onChange={(e)=>setNote(e.target.value)} placeholder="Owner review note" className="input" /><button type="button" disabled={pending} className="btn btn-secondary" onClick={()=>start(async()=>{const r=await reviewStockVarianceAction({business_date:date, menu_item_id:itemId, status:'resolved', review_note:note || undefined}); setMsg(r.ok?'Resolved':'Failed');})}>Mark resolved</button>{msg?<span className="section-subtitle">{msg}</span>:null}</div> }
