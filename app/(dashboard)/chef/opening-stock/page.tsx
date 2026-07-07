@@ -8,6 +8,9 @@ export default async function Page() {
   await requireRole(['chef', 'owner']);
   const supabase = await createServerSupabaseClient();
   const today = kenyaTodayDate();
+  const yesterday = new Date(`${today}T00:00:00.000Z`);
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  const yesterdayDate = yesterday.toISOString().slice(0, 10);
 
   const { data: menuItems } = await supabase
     .from('menu_items')
@@ -17,6 +20,11 @@ export default async function Page() {
     .order('sort_order', { ascending: true })
     .order('name', { ascending: true });
 
+  const { data: defaults } = await supabase
+    .from('closing_stock_entries')
+    .select('menu_item_id, qty')
+    .eq('entry_date', yesterdayDate);
+
   const { data: recent } = await supabase
     .from('opening_stock_entries')
     .select('id, entry_date, qty, created_at, updated_at, entered_by, menu_items(name), profiles!opening_stock_entries_entered_by_fkey(full_name)')
@@ -24,7 +32,8 @@ export default async function Page() {
     .order('updated_at', { ascending: false })
     .limit(40);
 
-  const items = (menuItems ?? []).map((row: any) => ({ id: row.id, name: row.name, category_name: row.menu_categories?.name ?? 'Uncategorized' }));
+  const defaultMap = new Map((defaults ?? []).map((row: any) => [row.menu_item_id, Number(row.qty)]));
+  const items = (menuItems ?? []).map((row: any) => ({ id: row.id, name: row.name, category_name: row.menu_categories?.name ?? 'Uncategorized', default_qty: defaultMap.get(row.id) }));
 
   return (
     <DashboardShell role="chef" title="Chef opening stock" description="Bulk enter and revise opening stock per item per day.">
